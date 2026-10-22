@@ -1,0 +1,21 @@
+# Guida per chi modifica il progetto
+
+- Leggere il file prima di cambiarlo. Il generato Drift si rigenera, non si riscrive.
+- Non inventare URL. Se la pagina ufficiale cambia i link degli ZIP, verificarli di nuovo e aggiornare `OfficialArchiveLocations` e [06_DATA_SOURCES](06_DATA_SOURCES.md) nello stesso cambiamento.
+- Non impostare `officiallyVerified` a vero senza un confronto fra fonti scritto nel codice e descritto qui.
+- Non aggiungere percentuali di affidabilità, «numeri sicuri» o premi in euro non citati.
+- Non mettere chiavi nel repository né nei log.
+- Una strategia di backtest deve ricevere solo la storia precedente. Il test `il backtest non consegna il futuro` va tenuto verde.
+- Un sistema integrale parziale non va etichettato come copertura completa.
+- Drift resta sulla 2.31 finché Flutter fissa `meta` 1.17.0.
+- Niente calcoli pesanti nel `build` dei widget. Le closure per `Isolate.run` o `BackgroundJob.start` si costruiscono in funzioni top-level: una closura nata in un `Notifier` o in uno `State` può catturare `ref` o il database e fallisce con «object is unsendable».
+- Un ridotto si dichiara garantito solo se `verifyReducedGuarantee` passa. Non aggiungere filtri al ridotto.
+- I coefficienti in `prize_table.dart` hanno una fonte citata nel commento del file. Cambiarli solo con una nuova fonte, aggiornando [28_PRIZES_AND_ALERTS](28_PRIZES_AND_ALERTS.md) e i test della tabella.
+- Ogni modifica a `tables.dart` alza `schemaVersion`, aggiunge il passo in `onUpgrade` e una fixture della versione precedente in `test/fixtures/`, con un test che la apre.
+- Il download dell'archivio vive solo in `ArchiveSyncService`. Il task serale e il controller lo chiamano; non duplicare la logica di rete.
+- Le funzioni del task WorkManager (`eveningSyncDispatcher`) restano top-level con `@pragma('vm:entry-point')` e non toccano Riverpod.
+- Le schedine `legacy` non vanno convertite inventando poste per sorte.
+- Prima di cambiare import o lettura delle ruote, rilanciare `LOTTO_ZIP=... flutter test tools/import_benchmark_test.dart` e confrontare i blocchi con [08_DRAW_SYNC_ENGINE](08_DRAW_SYNC_ENGINE.md).
+- La partizione di sistema di questa macchina è quasi piena. Le build Android vanno lanciate con `GRADLE_USER_HOME` e `TMPDIR` sul disco dati, come in [18_ANDROID_BUILD](18_ANDROID_BUILD.md). Non cancellare `~/.gradle` dell'utente per fare spazio.
+- Aggiornare [22_ROADMAP](22_ROADMAP.md), [23_CHANGELOG](23_CHANGELOG.md) e questa pagina quando una funzione passa da assente a reale.
+- Se un pezzo non si può fare, scriverlo in [27_KNOWN_LIMITATIONS](27_KNOWN_LIMITATIONS.md) con il motivo, invece di lasciare uno stub che sembra finito.

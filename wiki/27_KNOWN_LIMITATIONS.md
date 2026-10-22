@@ -1,0 +1,23 @@
+# Limiti noti
+
+- Nessuna estrazione è marcata ufficialmente verificata. Manca una seconda fonte confrontata riga per riga.
+- Il SuperEnalotto non ha uno ZIP ufficiale: l'archivio è la pagina HTML. I premi sono a montepremi e l'app non inventa importi in euro. Lo scarico dei mesi parte dal 2023, non dal 1997. Le schedine del Lotto non vengono confrontate con quelle combinazioni. Le schedine del SuperEnalotto registrano solo la categoria.
+- Ritardi, frequenze e suggerimenti del SuperEnalotto descrivono l'archivio. La probabilità equa di un numero nei sei estratti resta 6/90.
+- Lo ZIP non contiene il numero di concorso. Il controllo sui concorsi mancanti resta inattivo su questi dati.
+- La freschezza dopo le 21:00 è un'euristica sul calendario pubblicato, legata al fuso dell'orologio del dispositivo.
+- Il task serale WorkManager è testato in Dart con un server finto, non su telefono: l'ora delle 20:15 può slittare per Doze o risparmio energetico, e non è noto a che ora lo ZIP serale venga davvero aggiornato dalla fonte. I tentativi ogni 20 minuti fino alle 23 coprono un ritardo, non lo garantiscono.
+- La tabella premi arrotonda al centesimo sul totale della sorte; lo scontrino reale può differire di un centesimo. Estratto determinato, ambetto e Numero Oro non sono modellati.
+- Le schedine create prima della 0.3.0 non hanno poste per sorte e restano fuori dal saldo (`legacy`).
+- Il ridotto ha una garanzia verificata su tutti i casi, ma il numero di colonne non è dimostrato minimo. Pronostico fino a 60 numeri e al massimo 600.000 casi. Un elenco filtrato non è una copertura.
+- Lo Zoppe ordina i numeri per frequenza passata e mescola due fasce. Non è un ridotto a garanzia e non cambia la probabilità equa 5/90. Se la fascia 30–45 è vuota o troppo stretta, non produce colonne.
+- Uscire dal system builder con «indietro» ferma un calcolo in corso. Cambiare scheda no.
+- Il primo import completo ha ancora un blocco singolo di circa 55–70 ms del thread UI su desktop, probabilmente una raccolta della memoria. Su telefono non è stato misurato.
+- Il backtest confronta centri, non euro: ROI e drawdown monetari non ci sono nel report, e il JSON lo dichiara. Gli importi esistono solo per le schedine ipotetiche.
+- Non c'è un modello di machine learning classico né un runtime on-device obbligatorio.
+- Il PDF di backtest è un testo, non un impaginato da rivista.
+- L'export del system builder è CSV. Il PDF del sistema non c'è.
+- La finestra «personalizzata» oltre i preset non ha un campo numerico libero: ci sono i preset e «Tutte».
+- L'APK debug arm64 è stato compilato (`build/app/outputs/flutter-apk/app-debug.apk`, 0.5.1). Non copre le altre ABI e non è stato installato: in questo ambiente non c'è un telefono né un emulatore utilizzabile.
+- La richiesta di aggiornamento parte solo dai telefoni che hanno già la 0.5.1 o una successiva, e solo se in Impostazioni c'è l'indirizzo di un `update.json` raggiungibile. Non passa dal Play Store.
+- La release è firmata con la chiave di debug finché non si configura un keystore. Vedi [18_ANDROID_BUILD](18_ANDROID_BUILD.md).
+- Alcune licenze Android risultavano non accettate da `flutter doctor` al momento dell'audit.
