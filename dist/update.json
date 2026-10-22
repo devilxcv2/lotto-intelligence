@@ -1,6 +1,32 @@
 {
-  "versionName": "0.5.4",
-  "versionCode": 12,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.4/app-debug.apk",
-  "notes": "Nuova schedina in quattro passi chiari. Il Sistemone Zoppe riempie i numeri direttamente da lì. Scaricare resta facoltativo."
+  "versionName": "0.5.5",
+  "versionCode": 13,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.5/app-debug.apk",
+  "notes": "Scarico in app con barra e tempo restante. Se sei indietro di più versioni puoi scegliere quale installare; l'ultima è consigliata.",
+  "releases": [
+    {
+      "versionName": "0.5.5",
+      "versionCode": 13,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.5/app-debug.apk",
+      "notes": "Scarico in app con avanzamento e scelta della versione."
+    },
+    {
+      "versionName": "0.5.4",
+      "versionCode": 12,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.4/app-debug.apk",
+      "notes": "Schedina in quattro passi e Zoppe dalla nuova giocata."
+    },
+    {
+      "versionName": "0.5.3",
+      "versionCode": 11,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.3/app-debug.apk",
+      "notes": "Indirizzo di aggiornamento già impostato."
+    },
+    {
+      "versionName": "0.5.2",
+      "versionCode": 10,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.2/app-debug.apk",
+      "notes": "Sistemone Zoppe a gambe e SuperEnalotto."
+    }
+  ]
 }

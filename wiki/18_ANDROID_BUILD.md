@@ -29,6 +29,8 @@ L'app non è sul Play Store. In Impostazioni si salva l'indirizzo di un file JSO
 
 `apkUrl` deve essere `http` o `https`. Un file senza indirizzo non produce la richiesta.
 
+Dal 0.5.5 il JSON può contenere anche `releases`: elenco di versioni con lo stesso schema. L'app propone quelle con `versionCode` più alto di quello installato; l'ultima è in cima e consigliata. Lo scarico avviene in app (barra e tempo restante), non solo aprendo il browser.
+
 La build `release` nel `build.gradle.kts` firma ancora con la chiave di debug, così il progetto compila senza un keystore privato nel repository. Per una pubblicazione:
 
 1. Generare un keystore fuori dal repository: `keytool -genkey -v -keystore lotto-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lotto`.

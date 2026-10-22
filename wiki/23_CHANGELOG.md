@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.5 — 2026-10-22
+
+Scarico aggiornamenti in app.
+
+- Se sei indietro di più versioni puoi scegliere quale scaricare; l'ultima è consigliata.
+- Lo scarico mostra barra, megabyte, velocità e tempo restante. A fine file si apre l'installazione Android. «Più tardi» resta disponibile.
+
 ## 0.5.4 — 2026-10-22
 
 Schedina più chiara e Zoppe dalla nuova giocata.
