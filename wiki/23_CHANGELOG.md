@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2 — 2026-10-22
+
+Zoppe a gambe e SuperEnalotto.
+
+- Il Sistemone Zoppe prende un gettonato a caso, un ritardatario e un numero dalle fasce 30–45, 50–65 e 70–85. La legenda in pagina spiega ogni gamba. Sul SuperEnalotto la stessa costruzione ha sei numeri (più la fascia 15–30) e suggerisce Jolly e SuperStar dalle loro storie, senza inventare importi.
+
 ## 0.5.1 — 2026-10-22
 
 Richiesta di aggiornamento, non obbligatoria.

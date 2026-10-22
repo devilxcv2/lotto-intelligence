@@ -186,6 +186,16 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                         Text(suggestion.how, style: Theme.of(context).textTheme.bodySmall),
                         const SizedBox(height: 8),
                         NumberBalls(numbers: suggestion.numbers, gold: true),
+                        if (suggestion.jolly != null) ...[
+                          const SizedBox(height: 8),
+                          Text('Jolly suggerito: ${suggestion.jolly}', style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+                          if (suggestion.jollyHow != null) Text(suggestion.jollyHow!, style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                        if (suggestion.superstar != null) ...[
+                          const SizedBox(height: 8),
+                          Text('SuperStar suggerita: ${suggestion.superstar}', style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w700)),
+                          if (suggestion.superstarHow != null) Text(suggestion.superstarHow!, style: Theme.of(context).textTheme.bodySmall),
+                        ],
                         const SizedBox(height: 8),
                         OutlinedButton(
                           onPressed: () => setState(() {
@@ -194,8 +204,11 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                             _selected
                               ..clear()
                               ..addAll(suggestion.numbers);
-                            _origin = 'suggerimento';
+                            _origin = suggestion.name.contains('Zoppe') ? 'zoppe' : 'suggerimento';
                             _message = null;
+                            if (suggestion.superstar != null) {
+                              _superstar.text = '${suggestion.superstar}';
+                            }
                           }),
                           child: const Text('Metti in schedina'),
                         ),

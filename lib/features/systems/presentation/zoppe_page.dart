@@ -23,8 +23,8 @@ class ZoppePage extends ConsumerStatefulWidget {
 }
 
 class _ZoppePageState extends ConsumerState<ZoppePage> {
-  late final Set<int> _positive = {...widget.initialMask.where((number) => number >= 1 && number <= 90)};
-  var _share = 12;
+  late final Set<int> _universe = {...widget.initialMask.where((number) => number >= 1 && number <= 90)};
+  var _seed = 42;
   ZoppeResult? _result;
   String? _error;
 
@@ -42,12 +42,15 @@ class _ZoppePageState extends ConsumerState<ZoppePage> {
       });
       return;
     }
-    final hits = frequencyInWindow(draws);
+    final window = draws.length < zoppeWindowDraws ? draws.length : zoppeWindowDraws;
+    final stats = frequencyAndDelay(draws, window: window);
     final result = buildZoppeSystem(
-      positiveMask: _positive,
-      hits: hits,
-      positiveShare: _share / 100,
-      windowDraws: draws.length < zoppeWindowDraws ? draws.length : zoppeWindowDraws,
+      hits: stats.hits,
+      delays: stats.delay,
+      universe: _universe,
+      columnSize: 5,
+      seed: _seed,
+      windowDraws: window,
     );
     setState(() {
       _result = result;
@@ -67,20 +70,28 @@ class _ZoppePageState extends ConsumerState<ZoppePage> {
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 0), child: DisclaimerBanner()),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: ResultsBanner('Legenda'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(zoppeLegendFive, style: Theme.of(context).textTheme.bodySmall),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Text(
-              'Ruota: $name. Tocca i numeri della maschera positiva. '
-              'Quelli che restano spenti sono la maschera negativa, il complemento dei 90.',
+              'Ruota: $name. Tocca i numeri per limitare l\'universo (opzionale). '
+              'Se nessuno è acceso, lo Zoppe legge tutti i 90.',
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: _MaskGrid(
-              positive: _positive,
+              selected: _universe,
               result: result,
               onToggle: (number) => setState(() {
-                if (!_positive.remove(number)) _positive.add(number);
+                if (!_universe.remove(number)) _universe.add(number);
                 _result = null;
                 _error = null;
               }),
@@ -88,33 +99,32 @@ class _ZoppePageState extends ConsumerState<ZoppePage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text('Positiva ${_positive.length} · negativa ${90 - _positive.length}'),
+            child: Text(_universe.isEmpty ? 'Universo: tutti i 90' : 'Universo: ${_universe.length} numeri'),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text('Fetta più gettonata della positiva: $_share%'),
+            child: Text('Seme del gettonato casuale: $_seed'),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Slider(
-              value: _share.toDouble(),
-              min: 10,
-              max: 15,
-              divisions: 5,
-              label: '$_share%',
+              value: _seed.toDouble(),
+              min: 1,
+              max: 99,
+              divisions: 98,
+              label: '$_seed',
               onChanged: (value) => setState(() {
-                _share = value.round();
+                _seed = value.round();
                 _result = null;
                 _error = null;
               }),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             child: Text(
-              'Dalla negativa si tengono i numeri fra il 30° e il 45° posto della frequenza '
-              'nelle ultime $zoppeWindowDraws estrazioni. Non è la probabilità di uscire: '
-              'quella equa è sempre ${(singleNumberProbability * 100).toStringAsFixed(2)}% per ogni numero.',
+              'Il seme cambia quale gettonato esce a caso fra i più usciti. '
+              'La probabilità equa resta ${(singleNumberProbability * 100).toStringAsFixed(2)}% per ogni numero.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -146,7 +156,7 @@ class _Outcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final watched = {...result.positiveSlice, ...result.negativeBand}.length;
+    final watched = result.allPoolNumbers.length;
     final atLeast = zoppeFairAtLeastOne(watched);
     final preview = result.columns.take(8).toList();
     return Column(
@@ -154,42 +164,28 @@ class _Outcome extends StatelessWidget {
       children: [
         const SizedBox(height: 16),
         const ResultsBanner('Gambe dello Zoppe'),
+        for (final leg in result.legs)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(leg.label, style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w800)),
+                Text(leg.how, style: Theme.of(context).textTheme.bodySmall),
+                Text(leg.pool.isEmpty ? '—' : leg.pool.join(' · '), style: const TextStyle(color: AppColors.numberBlue, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Text(
-            'Fetta positiva, i più usciti: ${result.positiveSlice.join(' · ')}',
-            style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w700),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-          child: Text(
-            'Fascia negativa 30–45: ${result.negativeBand.join(' · ')}',
-            style: const TextStyle(color: AppColors.numberBlue, fontWeight: FontWeight.w700),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Text(
-            'Ogni colonna porta ${result.fromPositive} numeri della fetta positiva e ${result.fromNegative} della fascia negativa. '
-            'La gamba positiva è la più corta. Colonne: ${result.columns.length}, lette su ${result.windowDraws} estrazioni.',
-          ),
-        ),
-        if (result.trimmed)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 6, 16, 0),
-            child: Text('La fascia era troppo larga per i pari merito: sono rimasti i numeri più vicini al centro, il 37,5.'),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Text(
-            'Probabilità equa di almeno un centro tenendo d\'occhio questi $watched numeri: ${(atLeast * 100).toStringAsFixed(1)}%. '
-            'Ogni numero resta al ${(singleNumberProbability * 100).toStringAsFixed(2)}%.',
+            '${result.columns.length} colonne da ${result.columnSize}, lette su ${result.windowDraws} estrazioni. '
+            'Probabilità equa di almeno un centro tenendo d\'occhio $watched numeri delle gambe: ${(atLeast * 100).toStringAsFixed(1)}%.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
         const SizedBox(height: 16),
-        const ResultsBanner('Colonna con più uscite nel periodo'),
+        const ResultsBanner('Colonna guida'),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -199,7 +195,7 @@ class _Outcome extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Text(
             'Somma delle uscite storiche: ${result.leadHits}. '
-            'Ordina il passato. Non è la colonna più probabile: ogni cinquina di cinque numeri distinti ha la stessa probabilità.',
+            'Ordina il passato. Non è la colonna più probabile.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -228,9 +224,9 @@ class _Outcome extends StatelessWidget {
 }
 
 class _MaskGrid extends StatelessWidget {
-  const _MaskGrid({required this.positive, required this.result, required this.onToggle});
+  const _MaskGrid({required this.selected, required this.result, required this.onToggle});
 
-  final Set<int> positive;
+  final Set<int> selected;
   final ZoppeResult? result;
   final ValueChanged<int> onToggle;
 
@@ -250,7 +246,7 @@ class _MaskGrid extends StatelessWidget {
         final role = _role(context, number);
         return Semantics(
           button: true,
-          selected: positive.contains(number),
+          selected: selected.contains(number),
           label: 'Numero $number, ${role.label}',
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
@@ -276,17 +272,21 @@ class _MaskGrid extends StatelessWidget {
 
   _Role _role(BuildContext context, int number) {
     final result = this.result;
-    if (result != null && result.positiveSlice.contains(number)) {
-      return const _Role('fetta positiva', AppColors.ballGold, AppColors.navy, AppColors.ballGold);
+    final legId = result?.roleOf(number);
+    if (legId == 'gettonato') {
+      return const _Role('gettonato', AppColors.ballGold, AppColors.navy, AppColors.ballGold);
     }
-    if (result != null && result.negativeBand.contains(number)) {
-      return const _Role('fascia negativa', AppColors.ball, AppColors.ballText, AppColors.ball);
+    if (legId == 'ritardatario') {
+      return const _Role('ritardatario', AppColors.banner, Colors.white, AppColors.banner);
     }
-    if (positive.contains(number)) {
-      return const _Role('maschera positiva', AppColors.banner, Colors.white, AppColors.banner);
+    if (legId != null) {
+      return const _Role('fascia', AppColors.ball, AppColors.ballText, AppColors.ball);
     }
-    final scheme = Theme.of(context).colorScheme;
-    return _Role('maschera negativa', scheme.surface, scheme.onSurface, AppColors.line);
+    if (selected.isEmpty || selected.contains(number)) {
+      final scheme = Theme.of(context).colorScheme;
+      return _Role(selected.isEmpty ? 'universo' : 'selezionato', scheme.surface, scheme.onSurface, AppColors.line);
+    }
+    return const _Role('fuori', Color(0xFFE8E8E8), Color(0xFF9A9A9A), AppColors.line);
   }
 }
 

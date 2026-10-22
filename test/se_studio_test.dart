@@ -51,6 +51,34 @@ void main() {
     expect(match.superstarMatched, isFalse);
   });
 
+  test('lo Zoppe da sei propone anche Jolly e SuperStar', () {
+    final draws = [
+      for (var contest = 1; contest <= 90; contest++)
+        draw(
+          contest: contest,
+          numbers: [
+            ((contest) % 90) + 1,
+            ((contest + 7) % 90) + 1,
+            ((contest + 19) % 90) + 1,
+            ((contest + 31) % 90) + 1,
+            ((contest + 47) % 90) + 1,
+            ((contest + 61) % 90) + 1,
+          ],
+          jolly: contest.isEven ? 77 : 88,
+          superstar: contest % 3 == 0 ? 12 : 34,
+        ),
+    ];
+    final suggestions = suggestSuperenalotto(draws, seed: 5);
+    expect(suggestions.any((item) => item.name.contains('Zoppe')), isTrue);
+    final zoppe = suggestions.firstWhere((item) => item.name.contains('Zoppe'));
+    expect(zoppe.numbers, hasLength(6));
+    expect(zoppe.jolly, isNotNull);
+    expect(zoppe.numbers.contains(zoppe.jolly), isFalse);
+    expect(zoppe.superstar, isNotNull);
+    expect(zoppe.jollyHow, contains('Jolly'));
+    expect(zoppe.superstarHow, contains('SuperStar'));
+  });
+
   test('il ritardo guarda solo i sei numeri', () {
     final draws = [
       draw(contest: 1, numbers: const [1, 2, 3, 4, 5, 6], jolly: 1),

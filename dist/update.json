@@ -1,6 +1,6 @@
 {
-  "versionName": "0.5.1",
-  "versionCode": 9,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.1/app-debug.apk",
-  "notes": "Versione 0.5.1. Scaricare è facoltativo: Più tardi lascia l'app già installata."
+  "versionName": "0.5.2",
+  "versionCode": 10,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.2/app-debug.apk",
+  "notes": "Sistemone Zoppe a cinque gambe (gettonato, ritardatario, fasce 30–45 / 50–65 / 70–85) e Zoppe sul SuperEnalotto con suggerimenti Jolly e SuperStar. Scaricare è facoltativo."
 }

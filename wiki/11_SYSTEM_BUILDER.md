@@ -6,11 +6,9 @@ Colonne da 2 a 10 numeri (ambo, terno, quaterna, cinquina e colonne più lunghe)
 
 ## Sistemone Zoppe
 
-Codice: `lib/features/systems/domain/zoppe_system.dart`, pagina `presentation/zoppe_page.dart`. Si apre dal Laboratorio o dal pronostico del system builder.
+Codice: `lib/features/systems/domain/zoppe_system.dart`, pagina `presentation/zoppe_page.dart`. Si apre dal Laboratorio o dal pronostico del system builder. Sul SuperEnalotto la stessa costruzione ha sei gambe nello Studio.
 
-La maschera positiva è il pronostico toccato sulla griglia. La maschera negativa è il complemento, da 1 a 90. Sulle ultime 100 estrazioni della ruota ogni numero riceve un percentile di frequenza (0 i meno usciti, 100 i più usciti, pari merito allo stesso posto). Dalla negativa restano i numeri fra 30 e 45. Dalla positiva resta il 10–15% con più uscite, scelto con il cursore.
-
-Ogni colonna mescola le due gambe: 2 numeri della fetta positiva e 3 della fascia, oppure 1 e 4 se la fetta ha un solo numero. La gamba positiva è la più corta. Se i pari merito allargano la fascia oltre 20.000 colonne, si tengono i numeri più vicini al 37,5. La colonna mostrata per prima è quella con la somma di uscite più alta nel periodo: è un ordine sul passato. La probabilità equa di un numero resta 5/90 e sta scritta sulla pagina.
+Sulle ultime 100 estrazioni ogni numero ha uscite, ritardo e percentile di frequenza. Ogni colonna prende un numero da cinque gambe: (1) a caso fra i 12 più gettonati; (2) fra i 12 più ritardatari; (3) fascia 30–45; (4) fascia 50–65; (5) fascia 70–85. Con sei numeri si aggiunge la fascia 15–30. La griglia può limitare l'universo; se è vuota, valgono tutti i 90. Il seme cambia solo quale gettonato esce a caso. La colonna guida è quella con più uscite sommate nel periodo. La probabilità equa resta 5/90 (6/90 sul SuperEnalotto). Jolly e SuperStar hanno suggerimenti separati, letti solo dalle loro serie storiche.
 
 ## Modalità
 

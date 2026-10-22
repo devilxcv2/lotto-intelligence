@@ -1,5 +1,7 @@
 // lib/features/superenalotto/domain/superenalotto_studio.dart
 
+import '../../statistics/domain/statistics_engine.dart';
+import '../../systems/domain/zoppe_system.dart';
 import '../data/superenalotto_repository.dart';
 
 /// Probabilità equa che un numero compaia fra i sei estratti.
@@ -18,11 +20,23 @@ class SeNumberStat {
 }
 
 class SeSuggestion {
-  const SeSuggestion({required this.name, required this.how, required this.numbers});
+  const SeSuggestion({
+    required this.name,
+    required this.how,
+    required this.numbers,
+    this.jolly,
+    this.jollyHow,
+    this.superstar,
+    this.superstarHow,
+  });
 
   final String name;
   final String how;
   final List<int> numbers;
+  final int? jolly;
+  final String? jollyHow;
+  final int? superstar;
+  final String? superstarHow;
 }
 
 class SeMatch {
@@ -74,8 +88,69 @@ List<SeNumberStat> superenalottoStats(List<SuperenalottoDraw> chronological) {
   ];
 }
 
-/// Tre ipotesi descrittive da sei numeri. Non sono una previsione.
-List<SeSuggestion> suggestSuperenalotto(List<SuperenalottoDraw> chronological) {
+({Map<int, int> hits, Map<int, int> delay}) _extras(List<SuperenalottoDraw> draws, int Function(SuperenalottoDraw) pick) {
+  final hits = {for (var number = 1; number <= 90; number++) number: 0};
+  final last = {for (var number = 1; number <= 90; number++) number: -1};
+  for (var index = 0; index < draws.length; index++) {
+    final number = pick(draws[index]);
+    if (number < 1 || number > 90) continue;
+    hits[number] = hits[number]! + 1;
+    last[number] = index;
+  }
+  final total = draws.length;
+  return (
+    hits: hits,
+    delay: {for (var number = 1; number <= 90; number++) number: last[number]! < 0 ? total : total - 1 - last[number]!},
+  );
+}
+
+/// Jolly più uscito fra quelli che non stanno nei [exclude]. Descrive il passato.
+({int? number, String how}) suggestJolly(List<SuperenalottoDraw> chronological, {required Set<int> exclude}) {
+  if (chronological.length < 10) return (number: null, how: 'Servono più concorsi per un suggerimento sul Jolly.');
+  final window = chronological.length <= 100 ? chronological : chronological.sublist(chronological.length - 100);
+  final stats = _extras(window, (draw) => draw.jolly);
+  final ranked = [for (var number = 1; number <= 90; number++) number]
+    ..sort((a, b) {
+      final byHits = stats.hits[b]!.compareTo(stats.hits[a]!);
+      if (byHits != 0) return byHits;
+      return a.compareTo(b);
+    });
+  for (final number in ranked) {
+    if (exclude.contains(number)) continue;
+    if (stats.hits[number]! <= 0) continue;
+    return (
+      number: number,
+      how: 'Jolly più uscito nelle ultime ${window.length} combinazioni, escluso dai sei. '
+          'Il Jolly ufficiale non sta mai nei sei estratti. Non è una previsione.',
+    );
+  }
+  return (number: null, how: 'Nessun Jolly storico fuori dalla sestina in questo periodo.');
+}
+
+/// SuperStar più uscita. Può coincidere con un numero della sestina.
+({int? number, String how}) suggestSuperstar(List<SuperenalottoDraw> chronological) {
+  if (chronological.length < 10) return (number: null, how: 'Servono più concorsi per un suggerimento sulla SuperStar.');
+  final window = chronological.length <= 100 ? chronological : chronological.sublist(chronological.length - 100);
+  final stats = _extras(window, (draw) => draw.superstar);
+  final ranked = [for (var number = 1; number <= 90; number++) number]
+    ..sort((a, b) {
+      final byHits = stats.hits[b]!.compareTo(stats.hits[a]!);
+      if (byHits != 0) return byHits;
+      return a.compareTo(b);
+    });
+  final number = ranked.first;
+  if (stats.hits[number]! <= 0) {
+    return (number: null, how: 'Nessuna SuperStar storica in questo periodo.');
+  }
+  return (
+    number: number,
+    how: 'SuperStar più uscita nelle ultime ${window.length} combinazioni. '
+        'Può coincidere con uno dei sei. Non è una previsione.',
+  );
+}
+
+/// Ipotesi descrittive: ritardo, frequenza, Zoppe da sei con Jolly e SuperStar.
+List<SeSuggestion> suggestSuperenalotto(List<SuperenalottoDraw> chronological, {int seed = 42}) {
   if (chronological.length < 10) return const [];
   final stats = superenalottoStats(chronological);
   final delayed = [...stats]..sort((a, b) {
@@ -83,6 +158,11 @@ List<SeSuggestion> suggestSuperenalotto(List<SuperenalottoDraw> chronological) {
       if (byDelay != 0) return byDelay;
       return a.number.compareTo(b.number);
     });
+  final asDraws = [
+    for (final draw in chronological)
+      ArchivedDraw(date: draw.date, numbers: draw.numbers),
+  ];
+  final windowDraws = asDraws.length <= 100 ? asDraws : asDraws.sublist(asDraws.length - 100);
   final window = chronological.length <= 100 ? chronological : chronological.sublist(chronological.length - 100);
   final recent = superenalottoStats(window);
   final frequent = [...recent]..sort((a, b) {
@@ -102,48 +182,30 @@ List<SeSuggestion> suggestSuperenalotto(List<SuperenalottoDraw> chronological) {
       numbers: [for (final stat in frequent.take(6)) stat.number]..sort(),
     ),
   ];
-  final zoppe = _zoppeSix(recent);
-  if (zoppe != null) {
+
+  final counted = frequencyAndDelay(windowDraws);
+  final zoppe = buildZoppeSystem(
+    hits: counted.hits,
+    delays: counted.delay,
+    columnSize: 6,
+    seed: seed,
+    windowDraws: windowDraws.length,
+  );
+  if (zoppe.columns.isNotEmpty) {
+    final six = zoppe.leadColumn;
+    final jolly = suggestJolly(chronological, exclude: six.toSet());
+    final star = suggestSuperstar(chronological);
     out.add(SeSuggestion(
-      name: 'Zoppe da sei',
-      how: 'Due numeri fra i più usciti e quattro nella fascia di frequenza 30–45, la stessa idea del sistemone Zoppe del Lotto.',
-      numbers: zoppe,
+      name: 'Sistemone Zoppe',
+      how: zoppeLegendSix,
+      numbers: six,
+      jolly: jolly.number,
+      jollyHow: jolly.how,
+      superstar: star.number,
+      superstarHow: star.how,
     ));
   }
   return out;
-}
-
-List<int>? _zoppeSix(List<SeNumberStat> recent) {
-  final order = [...recent]..sort((a, b) {
-      final byHits = a.hits.compareTo(b.hits);
-      if (byHits != 0) return byHits;
-      return a.number.compareTo(b.number);
-    });
-  final percentile = <int, double>{};
-  var index = 0;
-  while (index < order.length) {
-    var end = index + 1;
-    while (end < order.length && order[end].hits == order[index].hits) {
-      end++;
-    }
-    final value = ((index + (end - 1)) / 2) / 89 * 100;
-    for (var cursor = index; cursor < end; cursor++) {
-      percentile[order[cursor].number] = value;
-    }
-    index = end;
-  }
-  final hot = [...recent]..sort((a, b) {
-      final byHits = b.hits.compareTo(a.hits);
-      if (byHits != 0) return byHits;
-      return a.number.compareTo(b.number);
-    });
-  final head = hot.take(2).map((stat) => stat.number).toSet();
-  final band = [
-    for (final stat in recent)
-      if (!head.contains(stat.number) && (percentile[stat.number] ?? 0) >= 30 && (percentile[stat.number] ?? 0) <= 45) stat.number,
-  ]..sort();
-  if (band.length < 4) return null;
-  return [...head, ...band.take(4)]..sort();
 }
 
 /// Categoria della schedina rispetto a un concorso. Nessun importo.
