@@ -12,6 +12,7 @@ import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/scientific_notice.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/settings_controller.dart';
+import '../../../core/settings/settings_repository.dart';
 import '../../../core/updates/update_prompt.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../../draws/data/draw_repository.dart';
@@ -131,7 +132,7 @@ class _UpdateSectionState extends ConsumerState<_UpdateSection> {
     Future.microtask(() async {
       final stored = await ref.read(settingsRepositoryProvider).updateManifestUrl();
       if (!mounted) return;
-      _url.text = stored;
+      _url.text = stored.isEmpty ? SettingsRepository.defaultUpdateManifestUrl : stored;
       setState(() => _ready = true);
     });
   }
@@ -162,7 +163,8 @@ class _UpdateSectionState extends ConsumerState<_UpdateSection> {
             keyboardType: TextInputType.url,
             decoration: const InputDecoration(
               labelText: 'Indirizzo del file di versione',
-              hintText: 'https://…/update.json',
+              hintText: SettingsRepository.defaultUpdateManifestUrl,
+              helperText: 'Se lo lasci vuoto, l\'app usa già quello su GitHub.',
             ),
           ),
           const SizedBox(height: 8),

@@ -23,6 +23,11 @@ class SettingsRepository {
   static const updateManifestKey = 'update_manifest_url';
   static const updateDismissedKey = 'update_dismissed_code';
 
+  /// File di versione pubblico su GitHub. Se in Impostazioni non c'è nulla,
+  /// l'app usa questo indirizzo.
+  static const defaultUpdateManifestUrl =
+      'https://raw.githubusercontent.com/devilxcv2/lotto-intelligence/main/dist/update.json';
+
   Future<AppSettings> load() async {
     final rows = await _db.select(_db.userSettings).get();
     final values = {for (final row in rows) row.key: row.value};
@@ -49,7 +54,8 @@ class SettingsRepository {
 
   Future<String> updateManifestUrl() async {
     final row = await (_db.select(_db.userSettings)..where((item) => item.key.equals(updateManifestKey))).getSingleOrNull();
-    return row?.value.trim() ?? '';
+    final stored = row?.value.trim() ?? '';
+    return stored.isEmpty ? defaultUpdateManifestUrl : stored;
   }
 
   Future<void> setUpdateManifestUrl(String url) => _write(updateManifestKey, url.trim());

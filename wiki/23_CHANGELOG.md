@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 — 2026-10-22
+
+Indirizzo di aggiornamento già impostato.
+
+- Se in Impostazioni il campo del file di versione è vuoto, l'app legge da sola `dist/update.json` sul repository pubblico GitHub. Non serve più copiare l'indirizzo a mano.
+
 ## 0.5.2 — 2026-10-22
 
 Zoppe a gambe e SuperEnalotto.

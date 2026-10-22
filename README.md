@@ -2,7 +2,7 @@
 
 Laboratorio locale per l'archivio del Lotto italiano: estrazioni, statistiche descrittive, sistemi di studio e backtest. Le estrazioni passate non vengono presentate come probabilità future.
 
-Versione 0.5.2. La documentazione è in [`wiki/00_INDEX.md`](wiki/00_INDEX.md).
+Versione 0.5.3. La documentazione è in [`wiki/00_INDEX.md`](wiki/00_INDEX.md).
 
 ## Avvio
 
@@ -15,7 +15,7 @@ GRADLE_USER_HOME="/media/eriko/dati/gradle-user-home" TMPDIR="/media/eriko/dati/
   flutter build apk --debug --target-platform android-arm64
 ```
 
-L'APK debug arm64 della 0.5.2 è `build/app/outputs/flutter-apk/app-debug.apk`. Non è stato installato su un telefono in questo ambiente.
+L'APK debug arm64 della 0.5.3 è `build/app/outputs/flutter-apk/app-debug.apk`. Non è stato installato su un telefono in questo ambiente.
 
 Ambiente usato per questa versione: Flutter 3.41.6, Dart 3.11.4, Java 17.
 
