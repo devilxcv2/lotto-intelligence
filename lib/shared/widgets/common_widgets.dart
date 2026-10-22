@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../../core/lotto/prize_table.dart';
 import '../../core/lotto/scientific_notice.dart';
 import '../../core/lotto/wheel_catalog.dart';
 import '../../core/settings/settings_controller.dart';
@@ -59,7 +60,7 @@ class SectionCard extends StatelessWidget {
 }
 
 class NumberBalls extends StatelessWidget {
-  const NumberBalls({required this.numbers, this.hits = const {}, this.gold = false, super.key});
+  const NumberBalls({required this.numbers, this.hits = const {}, this.gold = false, this.compact = false, super.key});
 
   final List<int> numbers;
   final Set<int> hits;
@@ -67,18 +68,23 @@ class NumberBalls extends StatelessWidget {
   /// Palline oro, come le estrazioni speciali. I [hits] restano blu.
   final bool gold;
 
+  /// Palline più piccole per le tabelle a molte ruote.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
+    final size = compact ? 32.0 : 42.0;
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: compact ? 4 : 8,
+      runSpacing: compact ? 4 : 8,
+      alignment: WrapAlignment.end,
       children: [
         for (final number in numbers)
           Semantics(
             label: 'Numero $number',
             child: Container(
-              width: 42,
-              height: 42,
+              width: size,
+              height: size,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -89,6 +95,7 @@ class NumberBalls extends StatelessWidget {
                 '$number',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
+                  fontSize: compact ? 12 : null,
                   color: hits.contains(number) || gold ? AppColors.navy : AppColors.ballText,
                 ),
               ),
@@ -120,51 +127,54 @@ class ResultsBanner extends StatelessWidget {
   }
 }
 
-/// Tabella a righe alternate: nome ruota arancione, numeri blu.
+/// Tabella a righe alternate: nome ruota arancione, palline blu.
 class DrawBoard extends StatelessWidget {
-  const DrawBoard({required this.banner, required this.rows, this.footer, super.key});
+  const DrawBoard({required this.banner, required this.rows, this.footer, this.onWheelTap, super.key});
 
   final String banner;
-  final List<({String wheel, List<int> numbers})> rows;
+  final List<({String wheel, List<int> numbers, String? code})> rows;
   final String? footer;
+  final ValueChanged<String>? onWheelTap;
 
   @override
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ResultsBanner(banner),
         for (var i = 0; i < rows.length; i++)
-          ColoredBox(
-            color: i.isOdd
-                ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A283C) : AppColors.rowAlt)
-                : Colors.transparent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 108,
-                    child: Text(rows[i].wheel, style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w700, fontSize: 16)),
-                  ),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        for (final number in rows[i].numbers)
-                          SizedBox(
-                            width: 36,
-                            child: Text(
-                              '$number',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: AppColors.numberBlue, fontWeight: FontWeight.w700, fontSize: 18),
-                            ),
+          Material(
+            color: i.isOdd ? (dark ? const Color(0xFF1A283C) : AppColors.rowAlt) : Colors.transparent,
+            child: InkWell(
+              onTap: rows[i].code == null || onWheelTap == null ? null : () => onWheelTap!(rows[i].code!),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            rows[i].wheel,
+                            style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w800, fontSize: 15),
                           ),
-                      ],
+                          if (rows[i].code != null)
+                            Text(rows[i].code!, style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: NumberBalls(numbers: rows[i].numbers, compact: true),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -231,21 +241,61 @@ class OrangeTable extends StatelessWidget {
 }
 
 class WheelSelector extends ConsumerWidget {
-  const WheelSelector({super.key});
+  const WheelSelector({this.onChanged, this.includeAllWheels = false, this.selectedCode, super.key});
+
+  /// Se valorizzato, non scrive nelle impostazioni globali: solo callback.
+  final ValueChanged<String>? onChanged;
+
+  /// Aggiunge la voce «Tutte (÷10)» per le schedine.
+  final bool includeAllWheels;
+
+  /// Codice selezionato quando si usa [onChanged] (locale). Altrimenti legge le impostazioni.
+  final String? selectedCode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider).value;
-    final selected = settings?.selectedWheelCode ?? 'BA';
+    final selected = selectedCode ?? settings?.selectedWheelCode ?? 'BA';
+    void pick(String code) {
+      if (onChanged != null) {
+        onChanged!(code);
+      } else {
+        ref.read(settingsControllerProvider.notifier).selectWheel(code);
+      }
+    }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         for (final wheel in officialWheels)
-          ChoiceChip(
+          FilterChip(
+            avatar: CircleAvatar(
+              backgroundColor: wheel.code == selected ? AppColors.banner : AppColors.navy.withValues(alpha: 0.12),
+              child: Text(
+                wheel.code,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: wheel.code == selected ? Colors.white : AppColors.navy,
+                ),
+              ),
+            ),
             label: Text(wheel.name),
             selected: wheel.code == selected,
-            onSelected: (_) => ref.read(settingsControllerProvider.notifier).selectWheel(wheel.code),
+            onSelected: (_) => pick(wheel.code),
+            showCheckmark: false,
+          ),
+        if (includeAllWheels)
+          FilterChip(
+            avatar: CircleAvatar(
+              backgroundColor: selected == allWheelsCode ? AppColors.banner : AppColors.navy.withValues(alpha: 0.12),
+              child: Icon(Icons.grid_view, size: 14, color: selected == allWheelsCode ? Colors.white : AppColors.navy),
+            ),
+            label: const Text('Tutte (÷10)'),
+            selected: selected == allWheelsCode,
+            onSelected: (_) => pick(allWheelsCode),
+            showCheckmark: false,
           ),
       ],
     );

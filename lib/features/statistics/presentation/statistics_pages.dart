@@ -32,9 +32,9 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
     return PageScaffold(
       title: 'Statistiche',
       actions: [
-        IconButton(tooltip: 'Heatmap', onPressed: () => context.push('/statistics/heatmap'), icon: const Icon(Icons.grid_on)),
-        IconButton(tooltip: 'Avanzate', onPressed: () => context.push('/statistics/advanced'), icon: const Icon(Icons.functions)),
-        IconButton(tooltip: 'Coppie', onPressed: () => context.push('/statistics/pairs'), icon: const Icon(Icons.join_inner)),
+        IconButton(tooltip: 'Heatmap', onPressed: () => context.push('/more/statistics/heatmap'), icon: const Icon(Icons.grid_on)),
+        IconButton(tooltip: 'Avanzate', onPressed: () => context.push('/more/statistics/advanced'), icon: const Icon(Icons.functions)),
+        IconButton(tooltip: 'Coppie', onPressed: () => context.push('/more/statistics/pairs'), icon: const Icon(Icons.join_inner)),
       ],
       child: ListView(
         padding: const EdgeInsets.all(16),

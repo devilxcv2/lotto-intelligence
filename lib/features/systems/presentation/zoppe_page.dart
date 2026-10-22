@@ -70,6 +70,37 @@ class _ZoppePageState extends ConsumerState<ZoppePage> {
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 0), child: DisclaimerBanner()),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text(
+              'Come usarlo: 1) scegli la ruota, 2) componi le colonne, 3) apri una schedina con la colonna guida '
+              'oppure usa «Sistemone Zoppe» direttamente da Schedine → Nuova. Non è una previsione.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: ResultsBanner('Ruota'),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Ora: $name', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.wheel)),
+                const SizedBox(height: 8),
+                WheelSelector(
+                  onChanged: (code) {
+                    ref.read(settingsControllerProvider.notifier).selectWheel(code);
+                    setState(() {
+                      _result = null;
+                      _error = null;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: ResultsBanner('Legenda'),
@@ -81,7 +112,7 @@ class _ZoppePageState extends ConsumerState<ZoppePage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Text(
-              'Ruota: $name. Tocca i numeri per limitare l\'universo (opzionale). '
+              'Tocca i numeri per limitare l\'universo (opzionale). '
               'Se nessuno è acceso, lo Zoppe legge tutti i 90.',
             ),
           ),

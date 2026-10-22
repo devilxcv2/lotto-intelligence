@@ -23,6 +23,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
+      // Vecchi collegamenti → nuove schede.
+      GoRoute(path: '/more/tickets', redirect: (context, state) => state.uri.toString().replaceFirst('/more/tickets', '/tickets')),
+      GoRoute(path: '/statistics', redirect: (context, state) {
+        final rest = state.uri.toString().substring('/statistics'.length);
+        return '/more/statistics$rest';
+      }),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [
@@ -48,12 +54,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-              path: '/statistics',
-              builder: (context, state) => const StatisticsPage(),
+              path: '/tickets',
+              builder: (context, state) => const TicketsPage(),
               routes: [
-                GoRoute(path: 'heatmap', builder: (context, state) => const HeatmapPage()),
-                GoRoute(path: 'advanced', builder: (context, state) => const AdvancedStatisticsPage()),
-                GoRoute(path: 'pairs', builder: (context, state) => const PairsPage()),
+                GoRoute(
+                  path: 'new',
+                  builder: (context, state) => NewTicketPage(
+                    initialNumbers: [
+                      for (final part in (state.uri.queryParameters['numbers'] ?? '').split(',')) ?int.tryParse(part.trim()),
+                    ],
+                    initialWheel: state.uri.queryParameters['wheel'],
+                  ),
+                ),
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => TicketDetailPage(id: int.parse(state.pathParameters['id']!)),
+                ),
               ],
             ),
           ]),
@@ -107,22 +123,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 ),
                 GoRoute(
-                  path: 'tickets',
-                  builder: (context, state) => const TicketsPage(),
+                  path: 'statistics',
+                  builder: (context, state) => const StatisticsPage(),
                   routes: [
-                    GoRoute(
-                      path: 'new',
-                      builder: (context, state) => NewTicketPage(
-                        initialNumbers: [
-                          for (final part in (state.uri.queryParameters['numbers'] ?? '').split(',')) ?int.tryParse(part.trim()),
-                        ],
-                        initialWheel: state.uri.queryParameters['wheel'],
-                      ),
-                    ),
-                    GoRoute(
-                      path: ':id',
-                      builder: (context, state) => TicketDetailPage(id: int.parse(state.pathParameters['id']!)),
-                    ),
+                    GoRoute(path: 'heatmap', builder: (context, state) => const HeatmapPage()),
+                    GoRoute(path: 'advanced', builder: (context, state) => const AdvancedStatisticsPage()),
+                    GoRoute(path: 'pairs', builder: (context, state) => const PairsPage()),
                   ],
                 ),
                 GoRoute(

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.6 — 2026-10-22
+
+Più semplice da usare.
+
+- In Impostazioni (e Portafoglio) il budget simulato può essere a limiti, spento o infinito, così le prove non restano bloccate.
+- Navigazione: Home · Estrazioni · Schedine · Lab · Altro. Le statistiche stanno in Altro.
+- Nuova schedina: prima la ruota, poi i suggerimenti (Zoppe, ritardatari, frequenti) e le poste.
+- Estrazioni con palline per ruota e tocco sullo storico; Zoppe con scelta ruota e guida d'uso.
+
 ## 0.5.5 — 2026-10-22
 
 Scarico aggiornamenti in app.

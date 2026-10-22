@@ -2,6 +2,34 @@
 
 import 'package:flutter/material.dart';
 
+/// Come il portafoglio simulato tratta i tetti di spesa.
+enum BudgetMode {
+  /// Concorso, mese e capitale bloccano la registrazione.
+  limits,
+
+  /// Nessun controllo sul budget: utile se i limiti disturbano lo studio.
+  off,
+
+  /// Come [off], ma i campi restano visibili come «infinito» per le prove.
+  unlimited,
+}
+
+extension BudgetModeLabel on BudgetMode {
+  String get label => switch (this) {
+        BudgetMode.limits => 'Limiti attivi',
+        BudgetMode.off => 'Budget spento',
+        BudgetMode.unlimited => 'Budget infinito',
+      };
+
+  String get hint => switch (this) {
+        BudgetMode.limits => 'Concorso, mese e capitale bloccano le schedine oltre il tetto.',
+        BudgetMode.off => 'Nessun blocco: puoi registrare senza guardare i tetti.',
+        BudgetMode.unlimited => 'I tetti non bloccano nulla. Ideale per le prove.',
+      };
+
+  bool get enforcesLimits => this == BudgetMode.limits;
+}
+
 class AppSettings {
   const AppSettings({
     required this.onboardingCompleted,
@@ -9,6 +37,7 @@ class AppSettings {
     required this.selectedWheelCode,
     required this.liveSyncEnabled,
     required this.notificationsEnabled,
+    required this.budgetMode,
     required this.virtualCapitalCents,
     required this.contestBudgetCents,
     required this.monthlyBudgetCents,
@@ -22,6 +51,9 @@ class AppSettings {
 
   /// Notifica locale quando arriva una nuova estrazione (richiede liveSync).
   final bool notificationsEnabled;
+
+  /// Se i limiti simulati devono bloccare le schedine.
+  final BudgetMode budgetMode;
   final int virtualCapitalCents;
   final int contestBudgetCents;
   final int monthlyBudgetCents;
@@ -33,6 +65,7 @@ class AppSettings {
     selectedWheelCode: 'BA',
     liveSyncEnabled: false,
     notificationsEnabled: true,
+    budgetMode: BudgetMode.limits,
     virtualCapitalCents: 10000,
     contestBudgetCents: 500,
     monthlyBudgetCents: 2000,
@@ -45,6 +78,7 @@ class AppSettings {
     String? selectedWheelCode,
     bool? liveSyncEnabled,
     bool? notificationsEnabled,
+    BudgetMode? budgetMode,
     int? virtualCapitalCents,
     int? contestBudgetCents,
     int? monthlyBudgetCents,
@@ -56,6 +90,7 @@ class AppSettings {
       selectedWheelCode: selectedWheelCode ?? this.selectedWheelCode,
       liveSyncEnabled: liveSyncEnabled ?? this.liveSyncEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      budgetMode: budgetMode ?? this.budgetMode,
       virtualCapitalCents: virtualCapitalCents ?? this.virtualCapitalCents,
       contestBudgetCents: contestBudgetCents ?? this.contestBudgetCents,
       monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,

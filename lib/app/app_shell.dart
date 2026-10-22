@@ -16,11 +16,12 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 840;
+    // Ordine allineato ai branch del router: Home → Estrazioni → Schedine → Lab → Altro.
     const items = <(IconData, String)>[
-      (Icons.dashboard_outlined, 'Home'),
+      (Icons.home_outlined, 'Home'),
       (Icons.confirmation_number_outlined, 'Estrazioni'),
-      (Icons.insights_outlined, 'Statistiche'),
-      (Icons.science_outlined, 'Laboratorio'),
+      (Icons.receipt_long_outlined, 'Schedine'),
+      (Icons.science_outlined, 'Lab'),
       (Icons.menu, 'Altro'),
     ];
     final body = ResultNoticeHost(
@@ -33,21 +34,21 @@ class AppShell extends StatelessWidget {
     );
     final page = wide
         ? Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
-              selectedIndex: shell.currentIndex,
-              onDestinationSelected: shell.goBranch,
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                for (final item in items) NavigationRailDestination(icon: Icon(item.$1), label: Text(item.$2)),
+            body: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: shell.currentIndex,
+                  onDestinationSelected: shell.goBranch,
+                  labelType: NavigationRailLabelType.all,
+                  destinations: [
+                    for (final item in items) NavigationRailDestination(icon: Icon(item.$1), label: Text(item.$2)),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: body),
               ],
             ),
-            const VerticalDivider(width: 1),
-            Expanded(child: body),
-          ],
-        ),
-      )
+          )
         : Scaffold(
             body: body,
             bottomNavigationBar: NavigationBar(

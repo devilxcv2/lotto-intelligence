@@ -187,7 +187,7 @@ class _StudyCard extends ConsumerWidget {
             runSpacing: 8,
             children: [
               FilledButton.tonalIcon(
-                onPressed: () => context.push('/more/tickets'),
+                onPressed: () => context.go('/tickets'),
                 icon: const Icon(Icons.receipt_long_outlined),
                 label: const Text('Schedine'),
               ),
@@ -197,14 +197,19 @@ class _StudyCard extends ConsumerWidget {
                 label: const Text('Nuova schedina'),
               ),
               OutlinedButton.icon(
+                onPressed: () => context.push('/lab/zoppe'),
+                icon: const Icon(Icons.hub_outlined),
+                label: const Text('Sistemone Zoppe'),
+              ),
+              OutlinedButton.icon(
                 onPressed: () => context.push('/more/wallet'),
                 icon: const Icon(Icons.account_balance_wallet_outlined),
                 label: const Text('Portafoglio'),
               ),
               OutlinedButton.icon(
-                onPressed: () => context.push('/lab/discovery'),
-                icon: const Icon(Icons.manage_search),
-                label: const Text('Trend'),
+                onPressed: () => context.push('/more/statistics'),
+                icon: const Icon(Icons.insights_outlined),
+                label: const Text('Statistiche'),
               ),
               OutlinedButton.icon(
                 onPressed: () {

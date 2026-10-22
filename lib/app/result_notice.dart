@@ -104,7 +104,7 @@ class ResultNoticeHost extends ConsumerWidget {
                             FilledButton(
                               onPressed: () {
                                 ref.read(resultNoticeProvider.notifier).state = null;
-                                context.go('/more/tickets');
+                                context.go('/tickets');
                               },
                               child: const Text('Vedi le schedine'),
                             ),

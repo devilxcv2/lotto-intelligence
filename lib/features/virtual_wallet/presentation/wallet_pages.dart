@@ -25,7 +25,7 @@ String newTicketRoute({List<int>? numbers, String? wheel}) {
     if (numbers != null && numbers.isNotEmpty) 'numbers=${numbers.join(',')}',
     if (wheel != null) 'wheel=$wheel',
   ];
-  return query.isEmpty ? '/more/tickets/new' : '/more/tickets/new?${query.join('&')}';
+  return query.isEmpty ? '/tickets/new' : '/tickets/new?${query.join('&')}';
 }
 
 const String _noChaseNote = 'Capitale, poste e vincite sono simulati. Perdere è l\'esito atteso nel lungo periodo: '
@@ -80,7 +80,7 @@ class WalletPage extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilledButton.icon(
-                  onPressed: () => context.push('/more/tickets'),
+                  onPressed: () => context.go('/tickets'),
                   icon: const Icon(Icons.receipt_long_outlined),
                   label: const Text('Schedine'),
                 ),
@@ -267,33 +267,60 @@ class _LimitsCardState extends ConsumerState<_LimitsCard> {
       _month.text = _euro(settings.monthlyBudgetCents);
       _ready = true;
     }
+    final mode = settings.budgetMode;
     return ExpansionTile(
-      title: const Text('Limiti simulati'),
-      subtitle: Text('Concorso ${formatEuro(settings.contestBudgetCents)} · mese ${formatEuro(settings.monthlyBudgetCents)} · capitale ${formatEuro(settings.virtualCapitalCents)}'),
+      title: const Text('Budget simulato'),
+      subtitle: Text(
+        mode == BudgetMode.limits
+            ? 'Concorso ${formatEuro(settings.contestBudgetCents)} · mese ${formatEuro(settings.monthlyBudgetCents)} · capitale ${formatEuro(settings.virtualCapitalCents)}'
+            : mode.label,
+      ),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
-        const Text('I tetti bloccano la registrazione quando vengono superati. Non si alzano da soli.'),
-        TextField(controller: _capital, decoration: const InputDecoration(labelText: 'Capitale iniziale simulato, euro'), keyboardType: TextInputType.number),
-        TextField(controller: _contest, decoration: const InputDecoration(labelText: 'Budget per concorso, euro'), keyboardType: TextInputType.number),
-        TextField(controller: _month, decoration: const InputDecoration(labelText: 'Budget mensile, euro'), keyboardType: TextInputType.number),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton(
-            onPressed: () async {
-              await ref.read(settingsControllerProvider.notifier).setBudgets(
-                    virtualCapitalCents: _cents(_capital.text),
-                    contestBudgetCents: _cents(_contest.text),
-                    monthlyBudgetCents: _cents(_month.text),
-                    unitCostCents: settings.unitCostCents,
-                  );
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Limiti simulati aggiornati.')));
-              }
-            },
-            child: const Text('Salva limiti'),
-          ),
+        Text(mode.hint),
+        const SizedBox(height: 8),
+        SegmentedButton<BudgetMode>(
+          segments: const [
+            ButtonSegment(value: BudgetMode.limits, label: Text('Limiti')),
+            ButtonSegment(value: BudgetMode.off, label: Text('Spento')),
+            ButtonSegment(value: BudgetMode.unlimited, label: Text('Infinito')),
+          ],
+          selected: {mode},
+          onSelectionChanged: (selection) {
+            ref.read(settingsControllerProvider.notifier).setBudgetMode(selection.first);
+          },
         ),
+        if (mode == BudgetMode.limits) ...[
+          const SizedBox(height: 12),
+          const Text('I tetti bloccano la registrazione quando vengono superati. Non si alzano da soli.'),
+          TextField(controller: _capital, decoration: const InputDecoration(labelText: 'Capitale iniziale simulato, euro'), keyboardType: TextInputType.number),
+          TextField(controller: _contest, decoration: const InputDecoration(labelText: 'Budget per concorso, euro'), keyboardType: TextInputType.number),
+          TextField(controller: _month, decoration: const InputDecoration(labelText: 'Budget mensile, euro'), keyboardType: TextInputType.number),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              onPressed: () async {
+                await ref.read(settingsControllerProvider.notifier).setBudgets(
+                      virtualCapitalCents: _cents(_capital.text),
+                      contestBudgetCents: _cents(_contest.text),
+                      monthlyBudgetCents: _cents(_month.text),
+                      unitCostCents: settings.unitCostCents,
+                    );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Limiti simulati aggiornati.')));
+                }
+              },
+              child: const Text('Salva limiti'),
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => context.push('/more/settings'),
+            child: const Text('Apri Impostazioni'),
+          ),
+        ],
       ],
     );
   }
@@ -466,7 +493,7 @@ class _TicketCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push('/more/tickets/${ticket.id}'),
+        onTap: () => context.push('/tickets/${ticket.id}'),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -557,7 +584,8 @@ class NewTicketPage extends ConsumerStatefulWidget {
 
 class _NewTicketPageState extends ConsumerState<NewTicketPage> {
   late final List<int> _numbers = [...widget.initialNumbers.where((n) => n >= 1 && n <= 90).toSet().take(maxTicketNumbers)];
-  late String _wheel = widget.initialWheel ?? 'BA';
+  late String _wheel;
+  var _appliedSettingsWheel = false;
   final Map<LottoSorte, int> _stakes = {LottoSorte.ambo: 100};
   String? _message;
   String? _hint;
@@ -565,6 +593,13 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
   var _suggestBusy = false;
   List<List<int>> _zoppeColumns = const [];
   var _zoppeIndex = 0;
+  ZoppeResult? _zoppePreview;
+
+  @override
+  void initState() {
+    super.initState();
+    _wheel = widget.initialWheel ?? 'BA';
+  }
 
   TicketDraft get _draft => TicketDraft(wheelCode: _wheel, numbers: [..._numbers]..sort(), stakes: {..._stakes});
 
@@ -574,11 +609,22 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsControllerProvider).value;
+    if (!_appliedSettingsWheel && widget.initialWheel == null && settings != null) {
+      _wheel = settings.selectedWheelCode;
+      _appliedSettingsWheel = true;
+    }
     final draft = _draft;
     final problem = draft.problem();
     final target = nextOpenDrawDate(DateTime.now());
     final sortedNumbers = [..._numbers]..sort();
     final wheelName = _wheel == allWheelsCode ? 'Tutte (÷10)' : (wheelByCode(_wheel)?.name ?? _wheel);
+    final budgetNote = settings == null
+        ? null
+        : switch (settings.budgetMode) {
+            BudgetMode.limits => 'Budget con limiti attivi (Impostazioni).',
+            BudgetMode.off => 'Budget spento: nessun blocco in registrazione.',
+            BudgetMode.unlimited => 'Budget infinito: nessun blocco in registrazione.',
+          };
     return PageScaffold(
       title: 'Nuova schedina',
       child: ListView(
@@ -588,12 +634,48 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Text(
-              'Quattro passi: numeri, ruota, poste, registra. È una giocata di studio: non parte nessun biglietto reale.',
+              'Quattro passi: scegli la ruota, i numeri (anche con suggerimenti), le poste e registra. '
+              'È una giocata di studio: non parte nessun biglietto reale.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
+          if (budgetNote != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(budgetNote, style: Theme.of(context).textTheme.bodySmall),
+            ),
           const SizedBox(height: 12),
-          const ResultsBanner('1 · Numeri'),
+          const ResultsBanner('1 · Ruota'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Giocata su: $wheelName', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.wheel)),
+                const SizedBox(height: 4),
+                Text(
+                  'I suggerimenti sotto leggono l\'archivio di questa ruota. «Tutte» divide il premio per 10 (senza Nazionale).',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                WheelSelector(
+                  selectedCode: _wheel,
+                  includeAllWheels: true,
+                  onChanged: (code) => setState(() {
+                    _wheel = code;
+                    _zoppeColumns = const [];
+                    _zoppePreview = null;
+                    _hint = null;
+                    if (code != allWheelsCode) {
+                      ref.read(settingsControllerProvider.notifier).selectWheel(code);
+                    }
+                  }),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const ResultsBanner('2 · Numeri e suggerimenti'),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Column(
@@ -607,77 +689,63 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                   const SizedBox(height: 8),
                   NumberBalls(numbers: sortedNumbers),
                 ],
+                const SizedBox(height: 12),
+                Text('Suggerimenti su ${_statsWheel == _wheel ? wheelName : (wheelByCode(_statsWheel)?.name ?? _statsWheel)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  'Descrivono il passato. Ogni numero ha la stessa probabilità equa 5/90.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
                 const SizedBox(height: 8),
-                Text('Suggerimenti dalla ruota $wheelName (descrizione del passato, non una previsione).'),
+                _SuggestionCard(
+                  title: 'Sistemone Zoppe',
+                  how: _zoppePreview == null
+                      ? 'Cinque gambe: gettonato, ritardatario, fasce 30–45 / 50–65 / 70–85. Tocca per riempire; di nuovo per un\'altra colonna.'
+                      : 'Colonna ${_zoppeIndex + 1} di ${_zoppeColumns.length}. ${_zoppePreview!.legend}',
+                  numbers: _zoppePreview?.leadColumn ?? const [],
+                  busy: _suggestBusy,
+                  actionLabel: _zoppeColumns.isEmpty ? 'Usa Zoppe' : 'Altra colonna',
+                  onUse: _fillZoppe,
+                  extra: TextButton(
+                    onPressed: () => context.push('/lab/zoppe'),
+                    child: const Text('Apri laboratorio Zoppe'),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: _suggestBusy ? null : _fillZoppe,
-                      icon: const Icon(Icons.hub_outlined),
-                      label: Text(_zoppeColumns.isEmpty ? 'Sistemone Zoppe' : 'Altra colonna Zoppe'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _suggestBusy ? null : () => _fill(_Fill.delays),
-                      icon: const Icon(Icons.hourglass_empty),
-                      label: const Text('Ritardatari'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _suggestBusy ? null : () => _fill(_Fill.frequent),
-                      icon: const Icon(Icons.trending_up),
-                      label: const Text('Frequenti'),
-                    ),
-                    TextButton(onPressed: _numbers.isEmpty ? null : () => setState(() {
-                      _numbers.clear();
-                      _hint = null;
-                    }), child: const Text('Svuota')),
-                  ],
+                _SuggestionCard(
+                  title: 'Ritardatari',
+                  how: 'I cinque più assenti nelle ultime 100 estrazioni. Il ritardo non alza la probabilità.',
+                  numbers: const [],
+                  busy: _suggestBusy,
+                  actionLabel: 'Usa ritardatari',
+                  onUse: () => _fill(_Fill.delays),
+                ),
+                const SizedBox(height: 8),
+                _SuggestionCard(
+                  title: 'Frequenti',
+                  how: 'I cinque più usciti nelle ultime 100 estrazioni. La frequenza non alza la probabilità.',
+                  numbers: const [],
+                  busy: _suggestBusy,
+                  actionLabel: 'Usa frequenti',
+                  onUse: () => _fill(_Fill.frequent),
                 ),
                 if (_hint != null) ...[
                   const SizedBox(height: 8),
                   Text(_hint!, style: Theme.of(context).textTheme.bodySmall),
                 ],
-                const SizedBox(height: 12),
-                _NumberGrid(selected: _numbers.toSet(), onToggle: _toggle),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          const ResultsBanner('2 · Ruota'),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Ora: $wheelName'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final wheel in officialWheels)
-                      ChoiceChip(
-                        label: Text(wheel.name),
-                        selected: _wheel == wheel.code,
-                        onSelected: (_) => setState(() {
-                          _wheel = wheel.code;
-                          _zoppeColumns = const [];
-                          _hint = null;
-                        }),
-                      ),
-                    ChoiceChip(
-                      label: const Text('Tutte (÷10, senza Nazionale)'),
-                      selected: _wheel == allWheelsCode,
-                      onSelected: (_) => setState(() {
-                        _wheel = allWheelsCode;
-                        _zoppeColumns = const [];
-                        _hint = null;
-                      }),
-                    ),
-                  ],
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _numbers.isEmpty
+                        ? null
+                        : () => setState(() {
+                              _numbers.clear();
+                              _hint = null;
+                            }),
+                    child: const Text('Svuota numeri'),
+                  ),
                 ),
+                const SizedBox(height: 8),
+                _NumberGrid(selected: _numbers.toSet(), onToggle: _toggle),
               ],
             ),
           ),
@@ -816,7 +884,7 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
             ..clear()
             ..addAll(column);
           _hint =
-              'Zoppe colonna ${_zoppeIndex + 1} di ${_zoppeColumns.length}: gettonato, ritardatario, fasce 30–45 / 50–65 / 70–85. '
+              'Zoppe colonna ${_zoppeIndex + 1} di ${_zoppeColumns.length} su $_statsWheel. '
               'Probabilità equa 5/90 per ogni numero.';
         });
         return;
@@ -842,6 +910,7 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
         return;
       }
       setState(() {
+        _zoppePreview = result;
         _zoppeColumns = result.columns;
         _zoppeIndex = 0;
         _numbers
@@ -849,7 +918,7 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
           ..addAll(result.leadColumn);
         _hint =
             'Sistemone Zoppe su $_statsWheel: ${result.leadColumn.join(' · ')}. '
-            'Tocca di nuovo «Altra colonna Zoppe» per la successiva. ${result.legend}';
+            'Tocca di nuovo «Altra colonna» per la successiva.';
       });
     } finally {
       if (mounted) setState(() => _suggestBusy = false);
@@ -925,7 +994,7 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
         await NotificationService.instance.requestPermission();
       }
       if (!mounted) return;
-      context.pushReplacement('/more/tickets/$id');
+      context.pushReplacement('/tickets/$id');
     } on StateError catch (error) {
       setState(() => _message = error.message);
     } finally {
@@ -935,6 +1004,61 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
 }
 
 enum _Fill { delays, frequent }
+
+class _SuggestionCard extends StatelessWidget {
+  const _SuggestionCard({
+    required this.title,
+    required this.how,
+    required this.numbers,
+    required this.busy,
+    required this.actionLabel,
+    required this.onUse,
+    this.extra,
+  });
+
+  final String title;
+  final String how;
+  final List<int> numbers;
+  final bool busy;
+  final String actionLabel;
+  final Future<void> Function() onUse;
+  final Widget? extra;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.wheel)),
+            const SizedBox(height: 4),
+            Text(how, style: Theme.of(context).textTheme.bodySmall),
+            if (numbers.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              NumberBalls(numbers: numbers, compact: true),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FilledButton.tonal(
+                  onPressed: busy ? null : () => onUse(),
+                  child: Text(busy ? 'Calcolo…' : actionLabel),
+                ),
+                ?extra,
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _NumberGrid extends StatelessWidget {
   const _NumberGrid({required this.selected, required this.onToggle});

@@ -11,6 +11,7 @@ import '../../../core/notifications/notification_service.dart';
 import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/scientific_notice.dart';
 import '../../../core/lotto/wheel_catalog.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_controller.dart';
 import '../../../core/settings/settings_repository.dart';
 import '../../../core/updates/update_prompt.dart';
@@ -27,25 +28,36 @@ class MoreHubPage extends StatelessWidget {
       child: ListView(
         children: [
           ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Impostazioni'),
+            subtitle: const Text('Tema, sync, budget simulato, aggiornamenti'),
+            onTap: () => context.push('/more/settings'),
+          ),
+          ListTile(
             leading: const Icon(Icons.account_balance_wallet_outlined),
             title: const Text('Portafoglio virtuale'),
-            subtitle: const Text('Saldo simulato, vincite nette, limiti di spesa'),
+            subtitle: const Text('Saldo simulato e limiti di spesa'),
             onTap: () => context.push('/more/wallet'),
           ),
           ListTile(
             leading: const Icon(Icons.receipt_long_outlined),
-            title: const Text('Schedine ipotetiche'),
-            subtitle: const Text('Giocate di studio del Lotto, confrontate con le ruote'),
-            onTap: () => context.push('/more/tickets'),
+            title: const Text('Schedine Lotto'),
+            subtitle: const Text('Anche dalla scheda Schedine in basso'),
+            onTap: () => context.push('/tickets'),
           ),
           ListTile(
             leading: const Icon(Icons.stars_outlined),
             title: const Text('Studio SuperEnalotto'),
-            subtitle: const Text('Ritardi, ultime combinazioni, suggerimenti e schedine'),
+            subtitle: const Text('Ritardi, suggerimenti e categorie di premio'),
             onTap: () => context.push('/more/se-studio'),
           ),
+          ListTile(
+            leading: const Icon(Icons.insights_outlined),
+            title: const Text('Statistiche'),
+            subtitle: const Text('Frequenze, ritardi, heatmap'),
+            onTap: () => context.push('/more/statistics'),
+          ),
           ListTile(leading: const Icon(Icons.menu_book_outlined), title: const Text('Wiki'), onTap: () => context.push('/more/wiki')),
-          ListTile(leading: const Icon(Icons.settings_outlined), title: const Text('Impostazioni'), onTap: () => context.push('/more/settings')),
           ListTile(leading: const Icon(Icons.health_and_safety_outlined), title: const Text('Diagnostica fonti'), onTap: () => context.push('/more/diagnostics')),
         ],
       ),
@@ -106,10 +118,124 @@ class SettingsPage extends ConsumerWidget {
                       if (enabled) await NotificationService.instance.requestPermission();
                     },
             ),
+            const Divider(),
+            const _BudgetSection(),
+            const Divider(),
             const _UpdateSection(),
             const Padding(padding: EdgeInsets.all(16), child: Text(scientificDisclaimer)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Budget simulato: limiti, spento o infinito per le prove.
+class _BudgetSection extends ConsumerStatefulWidget {
+  const _BudgetSection();
+
+  @override
+  ConsumerState<_BudgetSection> createState() => _BudgetSectionState();
+}
+
+class _BudgetSectionState extends ConsumerState<_BudgetSection> {
+  final _capital = TextEditingController();
+  final _contest = TextEditingController();
+  final _month = TextEditingController();
+  var _ready = false;
+
+  @override
+  void dispose() {
+    _capital.dispose();
+    _contest.dispose();
+    _month.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsControllerProvider).value;
+    if (settings == null) return const SizedBox.shrink();
+    if (!_ready) {
+      _capital.text = (settings.virtualCapitalCents / 100).toStringAsFixed(2);
+      _contest.text = (settings.contestBudgetCents / 100).toStringAsFixed(2);
+      _month.text = (settings.monthlyBudgetCents / 100).toStringAsFixed(2);
+      _ready = true;
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Budget simulato', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Serve solo allo studio. Se i limiti bloccano le prove, spegnili o mettili infiniti.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<BudgetMode>(
+            segments: const [
+              ButtonSegment(value: BudgetMode.limits, label: Text('Limiti'), icon: Icon(Icons.rule)),
+              ButtonSegment(value: BudgetMode.off, label: Text('Spento'), icon: Icon(Icons.block)),
+              ButtonSegment(value: BudgetMode.unlimited, label: Text('Infinito'), icon: Icon(Icons.all_inclusive)),
+            ],
+            selected: {settings.budgetMode},
+            onSelectionChanged: (selection) {
+              ref.read(settingsControllerProvider.notifier).setBudgetMode(selection.first);
+            },
+          ),
+          const SizedBox(height: 8),
+          Text(settings.budgetMode.hint, style: Theme.of(context).textTheme.bodySmall),
+          if (settings.budgetMode == BudgetMode.limits) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _capital,
+              decoration: const InputDecoration(labelText: 'Capitale iniziale, euro'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _contest,
+              decoration: const InputDecoration(labelText: 'Budget per concorso, euro'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _month,
+              decoration: const InputDecoration(labelText: 'Budget mensile, euro'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: () async {
+                  double cents(String raw) {
+                    final value = double.tryParse(raw.trim().replaceAll(',', '.')) ?? 0;
+                    return value * 100;
+                  }
+
+                  await ref.read(settingsControllerProvider.notifier).setBudgets(
+                        virtualCapitalCents: cents(_capital.text).round(),
+                        contestBudgetCents: cents(_contest.text).round(),
+                        monthlyBudgetCents: cents(_month.text).round(),
+                        unitCostCents: settings.unitCostCents,
+                      );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Limiti salvati.')));
+                  }
+                },
+                child: const Text('Salva limiti'),
+              ),
+            ),
+          ] else if (settings.budgetMode == BudgetMode.unlimited)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Capitale · concorso · mese: ∞ (nessun blocco in registrazione).',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -23,6 +23,8 @@ class SettingsController extends AsyncNotifier<AppSettings> {
 
   Future<void> setNotifications(bool enabled) => _update((settings) => settings.copyWith(notificationsEnabled: enabled));
 
+  Future<void> setBudgetMode(BudgetMode mode) => _update((settings) => settings.copyWith(budgetMode: mode));
+
   Future<void> setBudgets({
     required int virtualCapitalCents,
     required int contestBudgetCents,

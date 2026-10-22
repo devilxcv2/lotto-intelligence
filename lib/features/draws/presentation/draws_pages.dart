@@ -93,9 +93,11 @@ class _LottoDraws extends ConsumerWidget {
                 error: (error, _) => Padding(padding: const EdgeInsets.all(16), child: Text('$error')),
                 data: (items) => DrawBoard(
                   banner: 'Estrazione del ${formatItalianDate(data.latestDate!)}',
-                  rows: [for (final item in items) (wheel: item.wheelName, numbers: item.numbers)],
-                  footer: 'Le righe vengono dall\'archivio importato e non sono marcate come ufficialmente verificate. '
-                      'Le ruote nate dopo il 1939 compaiono solo dalla loro prima estrazione.',
+                  rows: [
+                    for (final item in items) (wheel: item.wheelName, numbers: item.numbers, code: item.wheelCode),
+                  ],
+                  footer: 'Tocca una ruota per lo storico. Le cinquine vengono dall\'archivio importato e non sono marcate come ufficialmente verificate.',
+                  onWheelTap: (code) => context.push('/draws/wheel/$code'),
                 ),
               ),
               Padding(
@@ -105,7 +107,10 @@ class _LottoDraws extends ConsumerWidget {
                   child: const Text('Apri il giorno'),
                 ),
               ),
-              const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 8), child: Text('Ruote', style: TextStyle(fontWeight: FontWeight.w700))),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text('Tutte le ruote', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
               const _WheelList(),
               ListTile(
                 leading: const Icon(Icons.file_open, color: AppColors.navy),
@@ -135,13 +140,22 @@ class _WheelList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         for (var i = 0; i < officialWheels.length; i++)
           ColoredBox(
-            color: i.isOdd ? AppColors.rowAlt.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 1) : Colors.transparent,
+            color: i.isOdd ? (dark ? const Color(0xFF1A283C) : AppColors.rowAlt) : Colors.transparent,
             child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppColors.banner,
+                child: Text(
+                  officialWheels[i].code,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+              ),
               title: Text(officialWheels[i].name, style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w700)),
+              subtitle: const Text('Storico e ultime cinquine'),
               trailing: const Icon(Icons.chevron_right, color: AppColors.numberBlue),
               onTap: () => context.push('/draws/wheel/${officialWheels[i].code}'),
             ),
@@ -249,8 +263,11 @@ class DrawDayPage extends ConsumerWidget {
             children: [
               DrawBoard(
                 banner: 'Estrazione del ${formatItalianDate(date)}',
-                rows: [for (final item in items) (wheel: item.wheelName, numbers: item.numbers)],
-                footer: 'Provenienza: ${items.first.provenance}. Nessuna estrazione è segnata come ufficialmente verificata.',
+                rows: [
+                  for (final item in items) (wheel: item.wheelName, numbers: item.numbers, code: item.wheelCode),
+                ],
+                footer: 'Provenienza: ${items.first.provenance}. Tocca una ruota per lo storico. Nessuna estrazione è segnata come ufficialmente verificata.',
+                onWheelTap: (code) => context.push('/draws/wheel/$code'),
               ),
             ],
           );
@@ -291,7 +308,7 @@ class WheelDetailPage extends ConsumerWidget {
               Text('${items.length} estrazioni archiviate.'),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => context.go('/statistics'),
+                onPressed: () => context.push('/more/statistics'),
                 child: const Text('Apri le statistiche'),
               ),
             ],

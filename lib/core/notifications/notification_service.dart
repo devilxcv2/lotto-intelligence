@@ -17,7 +17,7 @@ class NotificationService {
 
   static const channelId = 'draw_results';
   static const newDrawId = 1001;
-  static const ticketsRoute = '/more/tickets';
+  static const ticketsRoute = '/tickets';
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;

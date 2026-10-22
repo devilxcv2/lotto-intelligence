@@ -44,7 +44,7 @@ class LabHubPage extends StatelessWidget {
           _link(context, '/lab/ai', 'AI Lab', 'Baseline, pesi descrittivi, filtri, modelli opzionali'),
           _link(context, '/lab/models', 'Modelli AI', 'Endpoint, timeout, prova di connessione'),
           _link(context, '/lab/discovery', 'Ricerca trend', 'Settimane, probabilità e sistemone di studio'),
-          _link(context, '/lab/zoppe', 'Sistemone Zoppe', 'Gettonato, ritardatario e fasce 30–45 / 50–65 / 70–85'),
+          _link(context, '/lab/zoppe', 'Sistemone Zoppe', 'Suggerimenti a cinque gambe · anche da Nuova schedina'),
           _link(context, '/lab/backtest', 'Backtesting', 'Walk-forward senza dati futuri'),
           _link(context, '/lab/reports', 'Report', 'Simulazioni salvate ed esportabili'),
         ],

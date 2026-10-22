@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.5",
-  "versionCode": 13,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.5/app-debug.apk",
-  "notes": "Scarico in app con barra e tempo restante. Se sei indietro di più versioni puoi scegliere quale installare; l'ultima è consigliata.",
+  "versionName": "0.5.6",
+  "versionCode": 14,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.6/app-debug.apk",
+  "notes": "Budget spento o infinito in Impostazioni. Schedine in barra. Ruota prima dei numeri, suggerimenti Zoppe più chiari, estrazioni con palline.",
   "releases": [
+    {
+      "versionName": "0.5.6",
+      "versionCode": 14,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.6/app-debug.apk",
+      "notes": "Budget per le prove, Schedine in barra, UX ruote e Zoppe."
+    },
     {
       "versionName": "0.5.5",
       "versionCode": 13,

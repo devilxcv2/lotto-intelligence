@@ -77,6 +77,7 @@ void main() {
       selectedWheelCode: 'BA',
       liveSyncEnabled: false,
       notificationsEnabled: true,
+      budgetMode: BudgetMode.limits,
       virtualCapitalCents: 200,
       contestBudgetCents: 100,
       monthlyBudgetCents: 150,
@@ -85,5 +86,10 @@ void main() {
     expect(wallet.assess(settings: settings, spentThisMonthCents: 0, stakeCents: 100).allowed, isTrue);
     expect(wallet.assess(settings: settings, spentThisMonthCents: 100, stakeCents: 100).allowed, isFalse);
     expect(wallet.assess(settings: settings, spentThisMonthCents: 0, stakeCents: 150).message, contains('concorso'));
+
+    final infinite = settings.copyWith(budgetMode: BudgetMode.unlimited);
+    expect(wallet.assess(settings: infinite, spentThisMonthCents: 99999, stakeCents: 500).allowed, isTrue);
+    final off = settings.copyWith(budgetMode: BudgetMode.off);
+    expect(wallet.assess(settings: off, spentThisMonthCents: 99999, stakeCents: 500).allowed, isTrue);
   });
 }

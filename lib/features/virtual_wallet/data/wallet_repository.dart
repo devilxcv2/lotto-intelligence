@@ -161,6 +161,9 @@ class WalletRepository {
     if (stakeCents <= 0) {
       return const BudgetDecision.blocked('La spesa simulata deve essere maggiore di zero.');
     }
+    if (!settings.budgetMode.enforcesLimits) {
+      return const BudgetDecision.allowed();
+    }
     if (stakeCents > settings.contestBudgetCents) {
       return const BudgetDecision.blocked('Questa schedina supera il budget simulato per concorso. Il limite non viene alzato in automatico.');
     }
