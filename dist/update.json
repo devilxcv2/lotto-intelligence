@@ -1,6 +1,6 @@
 {
-  "versionName": "0.5.3",
-  "versionCode": 11,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.3/app-debug.apk",
-  "notes": "L'indirizzo di aggiornamento su GitHub è già impostato di default. Scaricare resta facoltativo."
+  "versionName": "0.5.4",
+  "versionCode": 12,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.4/app-debug.apk",
+  "notes": "Nuova schedina in quattro passi chiari. Il Sistemone Zoppe riempie i numeri direttamente da lì. Scaricare resta facoltativo."
 }

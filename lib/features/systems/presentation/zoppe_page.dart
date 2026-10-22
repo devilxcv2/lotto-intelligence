@@ -201,17 +201,28 @@ class _Outcome extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: OutlinedButton.icon(
+          child: FilledButton.icon(
             onPressed: () => context.push(newTicketRoute(numbers: result.leadColumn, wheel: wheel)),
             icon: const Icon(Icons.receipt_long_outlined),
-            label: const Text('Schedina ipotetica con questa colonna'),
+            label: const Text('Apri nuova schedina con questa colonna'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Oppure da Schedine → Nuova schedina usa il pulsante «Sistemone Zoppe»: riempie i numeri lì, senza passare da questa pagina.',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
         const SizedBox(height: 12),
         for (var i = 0; i < preview.length; i++)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-            child: Text('${i + 1}.  ${preview[i].join('   ')}'),
+            child: InkWell(
+              onTap: () => context.push(newTicketRoute(numbers: preview[i], wheel: wheel)),
+              child: Text('${i + 1}.  ${preview[i].join('   ')}'),
+            ),
           ),
         if (result.columns.length > preview.length)
           Padding(

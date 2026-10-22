@@ -16,6 +16,7 @@ import '../../../shared/widgets/common_widgets.dart';
 import '../../draws/data/archive_sync.dart';
 import '../../draws/data/draw_repository.dart';
 import '../../statistics/data/statistics_providers.dart';
+import '../../systems/domain/zoppe_system.dart';
 import '../data/wallet_repository.dart';
 
 /// Rotta della pagina «Nuova schedina», con numeri e ruota precompilati.
@@ -352,7 +353,7 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(newTicketRoute(wheel: settings?.selectedWheelCode)),
         icon: const Icon(Icons.add),
-        label: const Text('Nuova'),
+        label: const Text('Nuova schedina'),
       ),
       body: SafeArea(
         child: Align(
@@ -559,9 +560,16 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
   late String _wheel = widget.initialWheel ?? 'BA';
   final Map<LottoSorte, int> _stakes = {LottoSorte.ambo: 100};
   String? _message;
+  String? _hint;
   var _busy = false;
+  var _suggestBusy = false;
+  List<List<int>> _zoppeColumns = const [];
+  var _zoppeIndex = 0;
 
   TicketDraft get _draft => TicketDraft(wheelCode: _wheel, numbers: [..._numbers]..sort(), stakes: {..._stakes});
+
+  String get _statsWheel =>
+      _wheel == allWheelsCode ? (ref.read(settingsControllerProvider).value?.selectedWheelCode ?? 'BA') : _wheel;
 
   @override
   Widget build(BuildContext context) {
@@ -569,56 +577,121 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
     final draft = _draft;
     final problem = draft.problem();
     final target = nextOpenDrawDate(DateTime.now());
+    final sortedNumbers = [..._numbers]..sort();
+    final wheelName = _wheel == allWheelsCode ? 'Tutte (÷10)' : (wheelByCode(_wheel)?.name ?? _wheel);
     return PageScaffold(
-      title: 'Nuova schedina ipotetica',
+      title: 'Nuova schedina',
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(bottom: 28),
         children: [
-          SectionCard(
-            title: 'Numeri (${_numbers.length}/$maxTicketNumbers)',
-            trailing: TextButton(onPressed: _numbers.isEmpty ? null : () => setState(_numbers.clear), child: const Text('Svuota')),
+          const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 0), child: DisclaimerBanner()),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text(
+              'Quattro passi: numeri, ruota, poste, registra. È una giocata di studio: non parte nessun biglietto reale.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const ResultsBanner('1 · Numeri'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _NumberGrid(selected: _numbers.toSet(), onToggle: _toggle),
+                Text(
+                  sortedNumbers.isEmpty ? 'Nessun numero scelto (massimo $maxTicketNumbers).' : 'Scelti ${sortedNumbers.length} · ${sortedNumbers.join(' · ')}',
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.numberBlue),
+                ),
+                if (sortedNumbers.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  NumberBalls(numbers: sortedNumbers),
+                ],
+                const SizedBox(height: 8),
+                Text('Suggerimenti dalla ruota $wheelName (descrizione del passato, non una previsione).'),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    OutlinedButton(onPressed: () => _fill(_Fill.delays), child: const Text('Ritardatari')),
-                    OutlinedButton(onPressed: () => _fill(_Fill.frequent), child: const Text('Frequenti')),
+                    FilledButton.tonalIcon(
+                      onPressed: _suggestBusy ? null : _fillZoppe,
+                      icon: const Icon(Icons.hub_outlined),
+                      label: Text(_zoppeColumns.isEmpty ? 'Sistemone Zoppe' : 'Altra colonna Zoppe'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _suggestBusy ? null : () => _fill(_Fill.delays),
+                      icon: const Icon(Icons.hourglass_empty),
+                      label: const Text('Ritardatari'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _suggestBusy ? null : () => _fill(_Fill.frequent),
+                      icon: const Icon(Icons.trending_up),
+                      label: const Text('Frequenti'),
+                    ),
+                    TextButton(onPressed: _numbers.isEmpty ? null : () => setState(() {
+                      _numbers.clear();
+                      _hint = null;
+                    }), child: const Text('Svuota')),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Ritardi e frequenze descrivono il passato della ruota scelta. Non alzano la probabilità del prossimo estratto.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                if (_hint != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_hint!, style: Theme.of(context).textTheme.bodySmall),
+                ],
+                const SizedBox(height: 12),
+                _NumberGrid(selected: _numbers.toSet(), onToggle: _toggle),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          SectionCard(
-            title: 'Ruota',
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+          const ResultsBanner('2 · Ruota'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final wheel in officialWheels)
-                  ChoiceChip(label: Text(wheel.name), selected: _wheel == wheel.code, onSelected: (_) => setState(() => _wheel = wheel.code)),
-                ChoiceChip(
-                  label: const Text('Tutte (÷10, senza Nazionale)'),
-                  selected: _wheel == allWheelsCode,
-                  onSelected: (_) => setState(() => _wheel = allWheelsCode),
+                Text('Ora: $wheelName'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final wheel in officialWheels)
+                      ChoiceChip(
+                        label: Text(wheel.name),
+                        selected: _wheel == wheel.code,
+                        onSelected: (_) => setState(() {
+                          _wheel = wheel.code;
+                          _zoppeColumns = const [];
+                          _hint = null;
+                        }),
+                      ),
+                    ChoiceChip(
+                      label: const Text('Tutte (÷10, senza Nazionale)'),
+                      selected: _wheel == allWheelsCode,
+                      onSelected: (_) => setState(() {
+                        _wheel = allWheelsCode;
+                        _zoppeColumns = const [];
+                        _hint = null;
+                      }),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          SectionCard(
-            title: 'Poste per sorte',
+          const ResultsBanner('3 · Poste'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Column(
               children: [
+                Text(
+                  'Attiva le sorti con i pulsanti + e −. Restano tutte disponibili: quelle che i numeri non permettono restano a zero.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
                 for (final sorte in LottoSorte.values)
                   _StakeRow(
                     sorte: sorte,
@@ -636,32 +709,35 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                 const Divider(),
                 Row(
                   children: [
-                    const Expanded(child: Text('Totale posta', style: TextStyle(fontWeight: FontWeight.w600))),
-                    Text(formatEuro(draft.stakeCents), style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const Expanded(child: Text('Totale posta', style: TextStyle(fontWeight: FontWeight.w700))),
+                    Text(formatEuro(draft.stakeCents), style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.gold)),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Minimo 1,00 €, massimo 200,00 €, passi di 0,50 €. Vincita massima per scontrino 6.000.000 €. Ritenuta 8% sul lordo.',
+                  'Minimo 1,00 €, massimo 200,00 €, passi di 0,50 €. Cap 6.000.000 €. Ritenuta 8% sul lordo.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          SectionCard(
-            title: 'Riepilogo',
+          const ResultsBanner('4 · Registra'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Partecipa al concorso del ${formatItalianDate(target)} (raccolta chiusa alle 19:30 dei giorni di estrazione).'),
-                const SizedBox(height: 4),
+                Text('Concorso del ${formatItalianDate(target)} · raccolta chiusa alle 19:30.'),
+                const SizedBox(height: 6),
+                Text('$wheelName · ${sortedNumbers.isEmpty ? 'nessun numero' : sortedNumbers.join(' · ')} · posta ${formatEuro(draft.stakeCents)}'),
+                const SizedBox(height: 8),
                 if (problem == null) ...[
                   Text('Vincita lorda massima teorica: ${formatEuro(_maxGross(draft))}'),
                   const SizedBox(height: 4),
                   Text(_expectationLine(draft), style: Theme.of(context).textTheme.bodySmall),
                 ] else
-                  Text(problem, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  Text(problem, style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w600)),
                 if (_message != null) ...[
                   const SizedBox(height: 8),
                   Text(_message!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -670,7 +746,7 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                 FilledButton.icon(
                   onPressed: problem != null || _busy || settings == null ? null : () => _register(settings),
                   icon: const Icon(Icons.save_alt),
-                  label: const Text('Registra schedina ipotetica'),
+                  label: Text(_busy ? 'Registro…' : 'Registra schedina ipotetica'),
                 ),
                 const SizedBox(height: 8),
                 Text(_noChaseNote, style: Theme.of(context).textTheme.bodySmall),
@@ -684,33 +760,100 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
 
   void _toggle(int number) {
     setState(() {
+      _hint = null;
       if (_numbers.contains(number)) {
         _numbers.remove(number);
       } else if (_numbers.length < maxTicketNumbers) {
         _numbers.add(number);
+      } else {
+        _message = 'Massimo $maxTicketNumbers numeri su una schedina del Lotto.';
       }
     });
   }
 
   Future<void> _fill(_Fill kind) async {
-    final wheel = _wheel == allWheelsCode ? (ref.read(settingsControllerProvider).value?.selectedWheelCode ?? 'BA') : _wheel;
-    final stats = await ref.read(wheelStatisticsProvider((wheel: wheel, window: null)).future);
-    if (stats == null || !mounted) {
-      setState(() => _message = 'Statistiche non disponibili: archivio vuoto per questa ruota.');
-      return;
-    }
-    final sorted = [...stats.numbers];
-    if (kind == _Fill.delays) {
-      sorted.sort((a, b) => b.currentDelay.compareTo(a.currentDelay));
-    } else {
-      sorted.sort((a, b) => b.absoluteFrequency.compareTo(a.absoluteFrequency));
-    }
     setState(() {
+      _suggestBusy = true;
       _message = null;
-      _numbers
-        ..clear()
-        ..addAll(sorted.take(5).map((item) => item.number));
     });
+    try {
+      final stats = await ref.read(wheelStatisticsProvider((wheel: _statsWheel, window: 100)).future);
+      if (stats == null || !mounted) {
+        setState(() => _message = 'Statistiche non disponibili: archivio vuoto per questa ruota.');
+        return;
+      }
+      final sorted = [...stats.numbers];
+      if (kind == _Fill.delays) {
+        sorted.sort((a, b) => b.currentDelay.compareTo(a.currentDelay));
+      } else {
+        sorted.sort((a, b) => b.absoluteFrequency.compareTo(a.absoluteFrequency));
+      }
+      setState(() {
+        _zoppeColumns = const [];
+        _numbers
+          ..clear()
+          ..addAll(sorted.take(5).map((item) => item.number));
+        _hint = kind == _Fill.delays
+            ? 'Cinque ritardatari delle ultime 100 estrazioni su $_statsWheel. Il ritardo non alza la probabilità.'
+            : 'Cinque più frequenti delle ultime 100 estrazioni su $_statsWheel. La frequenza non alza la probabilità.';
+      });
+    } finally {
+      if (mounted) setState(() => _suggestBusy = false);
+    }
+  }
+
+  Future<void> _fillZoppe() async {
+    setState(() {
+      _suggestBusy = true;
+      _message = null;
+    });
+    try {
+      if (_zoppeColumns.isNotEmpty) {
+        _zoppeIndex = (_zoppeIndex + 1) % _zoppeColumns.length;
+        final column = _zoppeColumns[_zoppeIndex];
+        setState(() {
+          _numbers
+            ..clear()
+            ..addAll(column);
+          _hint =
+              'Zoppe colonna ${_zoppeIndex + 1} di ${_zoppeColumns.length}: gettonato, ritardatario, fasce 30–45 / 50–65 / 70–85. '
+              'Probabilità equa 5/90 per ogni numero.';
+        });
+        return;
+      }
+      final draws = await ref.read(wheelDrawsProvider(_statsWheel).future);
+      if (!mounted) return;
+      if (draws.length < 30) {
+        setState(() => _message = 'Servono almeno 30 estrazioni su $_statsWheel per lo Zoppe.');
+        return;
+      }
+      final window = draws.length < zoppeWindowDraws ? draws.length : zoppeWindowDraws;
+      final counted = frequencyAndDelay(draws, window: window);
+      final result = buildZoppeSystem(
+        hits: counted.hits,
+        delays: counted.delay,
+        columnSize: 5,
+        seed: DateTime.now().millisecondsSinceEpoch % 9973,
+        windowDraws: window,
+      );
+      if (!mounted) return;
+      if (result.columns.isEmpty) {
+        setState(() => _message = result.error ?? 'Zoppe non disponibile su questa ruota.');
+        return;
+      }
+      setState(() {
+        _zoppeColumns = result.columns;
+        _zoppeIndex = 0;
+        _numbers
+          ..clear()
+          ..addAll(result.leadColumn);
+        _hint =
+            'Sistemone Zoppe su $_statsWheel: ${result.leadColumn.join(' · ')}. '
+            'Tocca di nuovo «Altra colonna Zoppe» per la successiva. ${result.legend}';
+      });
+    } finally {
+      if (mounted) setState(() => _suggestBusy = false);
+    }
   }
 
   int _maxGross(TicketDraft draft) {

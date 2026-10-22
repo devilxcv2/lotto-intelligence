@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.4 — 2026-10-22
+
+Schedina più chiara e Zoppe dalla nuova giocata.
+
+- Nuova schedina in quattro passi (numeri, ruota, poste, registra), con i numeri scelti in evidenza.
+- Da lì partono Ritardatari, Frequenti e Sistemone Zoppe: lo Zoppe riempie cinque numeri e «Altra colonna Zoppe» passa alla successiva. Nulla di quanto c'era prima è stato tolto.
+
 ## 0.5.3 — 2026-10-22
 
 Indirizzo di aggiornamento già impostato.
