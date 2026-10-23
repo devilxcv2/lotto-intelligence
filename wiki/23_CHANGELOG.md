@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.11 — 2026-10-24
+
+Area SuperEnalotto dedicata.
+
+- Hub verde/oro separato dal Lotto: ultimo concorso, azioni, conteggi.
+- Catalogo schedine SE con filtri (in attesa, categorie, nessuna), distinto dalle schedine Lotto in euro.
+- Studio e nuova giocata dentro l’area; da Estrazioni e Altro si entra dall’hub.
+
 ## 0.5.10 — 2026-10-23
 
 Avviso aggiornamento più affidabile.

@@ -63,6 +63,9 @@ class SeMatch {
         'due' => 'Due',
         _ => 'Nessuna categoria',
       };
+
+  /// Categoria di premio (non un importo): due o più numeri, o cinque + Jolly.
+  bool get isCategoryWin => category != 'nessuna';
 }
 
 /// Ritardi e frequenze sui soli sei numeri. Jolly e SuperStar non contano nel ritardo.

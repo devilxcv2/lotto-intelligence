@@ -52,14 +52,14 @@ class MoreHubPage extends StatelessWidget {
             ],
           ),
           HubSection(
-            title: 'Altri giochi',
-            subtitle: 'Le schedine Lotto stanno nella scheda Schedine.',
+            title: 'SuperEnalotto',
+            subtitle: 'Area dedicata, separata dalle schedine Lotto.',
             children: [
               HubTile(
                 icon: Icons.stars_outlined,
-                title: 'Studio SuperEnalotto',
-                subtitle: 'Ritardi, suggerimenti e categorie',
-                onTap: () => context.push('/more/se-studio'),
+                title: 'SuperEnalotto',
+                subtitle: 'Hub, catalogo categorie, nuova schedina',
+                onTap: () => context.push('/more/se'),
               ),
             ],
           ),

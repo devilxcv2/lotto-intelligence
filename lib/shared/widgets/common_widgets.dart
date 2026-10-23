@@ -108,15 +108,16 @@ class NumberBalls extends StatelessWidget {
 
 /// Fascia arancione «Estrazione del …».
 class ResultsBanner extends StatelessWidget {
-  const ResultsBanner(this.label, {super.key});
+  const ResultsBanner(this.label, {this.color, super.key});
 
   final String label;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: AppColors.banner,
+      color: color ?? AppColors.banner,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: Text(
         label,

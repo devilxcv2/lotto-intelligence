@@ -9,7 +9,9 @@ import '../features/dashboard/presentation/dashboard_page.dart';
 import '../features/dashboard/presentation/startup_pages.dart';
 import '../features/draws/presentation/draws_pages.dart';
 import '../features/settings/presentation/more_pages.dart';
+import '../features/superenalotto/presentation/se_hub_page.dart';
 import '../features/superenalotto/presentation/se_studio_page.dart';
+import '../features/superenalotto/presentation/se_tickets_page.dart';
 import '../features/statistics/presentation/statistics_pages.dart';
 import '../features/discovery/presentation/discovery_page.dart';
 import '../features/systems/presentation/system_pages.dart';
@@ -115,12 +117,28 @@ final routerProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(path: 'wallet', builder: (context, state) => const WalletPage()),
                 GoRoute(
+                  path: 'se',
+                  builder: (context, state) => const SeHubPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'studio',
+                      builder: (context, state) => SeStudioPage(
+                        initialNumbers: [
+                          for (final part in (state.uri.queryParameters['numbers'] ?? '').split(',')) ?int.tryParse(part.trim()),
+                        ],
+                      ),
+                    ),
+                    GoRoute(path: 'tickets', builder: (context, state) => const SeTicketsPage()),
+                  ],
+                ),
+                // Vecchio percorso → studio dentro l'area SuperEnalotto.
+                GoRoute(
                   path: 'se-studio',
-                  builder: (context, state) => SeStudioPage(
-                    initialNumbers: [
-                      for (final part in (state.uri.queryParameters['numbers'] ?? '').split(',')) ?int.tryParse(part.trim()),
-                    ],
-                  ),
+                  redirect: (context, state) {
+                    final numbers = state.uri.queryParameters['numbers'];
+                    if (numbers == null || numbers.isEmpty) return '/more/se/studio';
+                    return '/more/se/studio?numbers=$numbers';
+                  },
                 ),
                 GoRoute(
                   path: 'statistics',

@@ -9,7 +9,6 @@ import '../../../core/lotto/wheel_catalog.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../data/superenalotto_repository.dart';
 import '../data/superenalotto_sync.dart';
-import 'se_studio_page.dart';
 
 class SuperenalottoBoard extends ConsumerWidget {
   const SuperenalottoBoard({super.key});
@@ -71,9 +70,14 @@ class SuperenalottoBoard extends ConsumerWidget {
               if (sync.running)
                 TextButton(onPressed: () => ref.read(superenalottoSyncProvider.notifier).cancel(), child: const Text('Annulla')),
               OutlinedButton.icon(
-                onPressed: () => context.push(seStudioRoute()),
+                onPressed: () => context.push('/more/se'),
+                icon: const Icon(Icons.stars_outlined),
+                label: const Text('Area SuperEnalotto'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/more/se/tickets'),
                 icon: const Icon(Icons.receipt_long_outlined),
-                label: const Text('Studio e schedine'),
+                label: const Text('Catalogo schedine'),
               ),
             ],
           ),

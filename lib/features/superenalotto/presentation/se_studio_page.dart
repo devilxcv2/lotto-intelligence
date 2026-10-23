@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../core/lotto/freshness.dart';
@@ -11,10 +12,11 @@ import '../../systems/domain/combinations.dart';
 import '../data/se_ticket_repository.dart';
 import '../data/superenalotto_repository.dart';
 import '../domain/superenalotto_studio.dart';
+import 'se_chrome.dart';
 
 String seStudioRoute({List<int>? numbers}) {
-  if (numbers == null || numbers.isEmpty) return '/more/se-studio';
-  return '/more/se-studio?numbers=${numbers.join(',')}';
+  if (numbers == null || numbers.isEmpty) return '/more/se/studio';
+  return '/more/se/studio?numbers=${numbers.join(',')}';
 }
 
 class SeStudioPage extends ConsumerStatefulWidget {
@@ -85,7 +87,13 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
       ref.invalidate(seTicketsProvider);
       if (!mounted) return;
       final when = formatItalianDate(nextOpenDrawDate(DateTime.now()));
-      setState(() => _message = 'Schedina registrata per il concorso del $when. L\'esito sarà una categoria, non un importo.');
+      setState(() => _message = 'Schedina registrata per il $when. La trovi nel catalogo SuperEnalotto (categoria, non euro).');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registrata per il $when'),
+          action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
+        ),
+      );
     } catch (error) {
       if (mounted) setState(() => _message = '$error');
     }
@@ -107,11 +115,21 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(superenalottoHistoryProvider);
-    final tickets = ref.watch(seTicketsProvider);
-    return PageScaffold(
-      title: 'Studio SuperEnalotto',
-      child: history.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: SeColors.cream,
+      appBar: AppBar(
+        backgroundColor: SeColors.forest,
+        foregroundColor: Colors.white,
+        title: const Text('Nuova schedina SE'),
+        actions: [
+          TextButton(
+            onPressed: () => context.push('/more/se/tickets'),
+            child: const Text('Catalogo', style: TextStyle(color: SeColors.gold, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+      body: history.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: SeColors.forest)),
         error: (error, _) => Center(child: Text('$error')),
         data: (draws) {
           final stats = superenalottoStats(draws);
@@ -121,37 +139,41 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
               return a.number.compareTo(b.number);
             });
           final suggestions = suggestSuperenalotto(draws);
-          final latest = draws.reversed.take(8).toList();
+          final latest = draws.reversed.take(5).toList();
           final fair = (superenalottoNumberProbability * 100).toStringAsFixed(2);
           return ListView(
             padding: const EdgeInsets.only(bottom: 28),
             children: [
-              const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 0), child: DisclaimerBanner()),
+              const SeHeroHeader(
+                title: 'Componi la giocata',
+                subtitle: 'Categorie a montepremi · separate dalle schedine Lotto in euro.',
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Text(
-                  'Schedine di studio sul SuperEnalotto. Le strategie del Lotto restano nel portafoglio, con le poste in euro. '
-                  'Qui i premi sono a montepremi: si registra la categoria (sei, cinque + Jolly, cinque, quattro, tre, due), non un importo. '
-                  'Ogni numero ha probabilità equa $fair% di stare nei sei estratti.',
+                  'Probabilità equa di un numero nei sei: $fair%. Jolly e SuperStar non azzerano i ritardi dei sei.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
               if (latest.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                ResultsBanner('Concorso ${latest.first.contestNumber} del ${formatItalianDate(latest.first.date)}'),
+                ResultsBanner(
+                  'Concorso ${latest.first.contestNumber} · ${formatItalianDate(latest.first.date)}',
+                  color: SeColors.forest,
+                ),
                 const SizedBox(height: 12),
                 Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: NumberBalls(numbers: latest.first.numbers, gold: true)),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Text('Jolly ${latest.first.jolly} · SuperStar ${latest.first.superstar}. Combinazione non verificata con un secondo bollettino.'),
+                  child: Text('Jolly ${latest.first.jolly} · SuperStar ${latest.first.superstar}'),
                 ),
               ],
               const SizedBox(height: 16),
-              const ResultsBanner('Ritardatari'),
+              ResultsBanner('Ritardatari', color: SeColors.forest),
               if (draws.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Scarica prima l\'archivio da Estrazioni → SuperEnalotto.'),
+                  child: Text('Scarica prima l\'archivio dall\'area SuperEnalotto o da Estrazioni.'),
                 )
               else
                 OrangeTable(
@@ -161,39 +183,28 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                       ['${stat.number}', stat.neverSeen ? '${stat.delay} (mai)' : '${stat.delay}', '${stat.hits}', '$fair%'],
                   ],
                 ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Text('Il ritardo conta solo i sei numeri estratti. Jolly e SuperStar non lo azzerano.'),
-              ),
-              const SizedBox(height: 16),
-              const ResultsBanner('Ultime combinazioni'),
-              for (final draw in latest)
-                ListTile(
-                  title: Text('${formatItalianDate(draw.date)} · Nº ${draw.contestNumber}', style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w700)),
-                  subtitle: Text('${draw.numbers.join('  ')}    J ${draw.jolly}    S ${draw.superstar}', style: const TextStyle(color: AppColors.numberBlue, fontWeight: FontWeight.w700)),
-                ),
               if (suggestions.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const ResultsBanner('Suggerimenti'),
+                ResultsBanner('Suggerimenti', color: SeColors.forest),
                 for (final suggestion in suggestions)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(suggestion.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(suggestion.name, style: const TextStyle(fontWeight: FontWeight.w800, color: SeColors.forest)),
                         const SizedBox(height: 4),
                         Text(suggestion.how, style: Theme.of(context).textTheme.bodySmall),
                         const SizedBox(height: 8),
                         NumberBalls(numbers: suggestion.numbers, gold: true),
                         if (suggestion.jolly != null) ...[
                           const SizedBox(height: 8),
-                          Text('Jolly suggerito: ${suggestion.jolly}', style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+                          Text('Jolly suggerito: ${suggestion.jolly}', style: const TextStyle(color: SeColors.forest, fontWeight: FontWeight.w700)),
                           if (suggestion.jollyHow != null) Text(suggestion.jollyHow!, style: Theme.of(context).textTheme.bodySmall),
                         ],
                         if (suggestion.superstar != null) ...[
                           const SizedBox(height: 8),
-                          Text('SuperStar suggerita: ${suggestion.superstar}', style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w700)),
+                          Text('SuperStar suggerita: ${suggestion.superstar}', style: const TextStyle(color: SeColors.mint, fontWeight: FontWeight.w700)),
                           if (suggestion.superstarHow != null) Text(suggestion.superstarHow!, style: Theme.of(context).textTheme.bodySmall),
                         ],
                         const SizedBox(height: 8),
@@ -259,41 +270,39 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                   runSpacing: 8,
                   children: [
                     if (!_systemMode)
-                      FilledButton(onPressed: () => _save(_selected.toList()..sort()), child: const Text('Registra schedina')),
-                    if (_systemMode) FilledButton(onPressed: _develop, child: const Text('Sviluppa il sistemone')),
-                    TextButton(onPressed: () => setState(() {
-                      _selected.clear();
-                      _system = null;
-                      _origin = 'manuale';
-                    }), child: const Text('Svuota')),
+                      FilledButton(
+                        style: FilledButton.styleFrom(backgroundColor: SeColors.forest),
+                        onPressed: () => _save(_selected.toList()..sort()),
+                        child: const Text('Registra schedina'),
+                      ),
+                    if (_systemMode)
+                      FilledButton(
+                        style: FilledButton.styleFrom(backgroundColor: SeColors.forest),
+                        onPressed: _develop,
+                        child: const Text('Sviluppa il sistemone'),
+                      ),
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _selected.clear();
+                        _system = null;
+                        _origin = 'manuale';
+                      }),
+                      child: const Text('Svuota'),
+                    ),
                   ],
                 ),
               ),
               if (_message != null)
                 Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: Text(_message!)),
-              if (_system != null && _system!.combinations.isNotEmpty) _SystemPreview(result: _system!, onSave: (row) => _save(row, origin: 'sistemone')),
-              const SizedBox(height: 16),
-              const ResultsBanner('Schedine SuperEnalotto'),
-              tickets.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (error, _) => Padding(padding: const EdgeInsets.all(16), child: Text('$error')),
-                data: (items) {
-                  if (items.isEmpty) {
-                    return const Padding(padding: EdgeInsets.all(16), child: Text('Nessuna schedina. Quelle del Lotto restano nel portafoglio.'));
-                  }
-                  return Column(
-                    children: [
-                      for (final ticket in items)
-                        ListTile(
-                          title: Text(ticket.numbers.join(' · '), style: const TextStyle(color: AppColors.numberBlue, fontWeight: FontWeight.w700)),
-                          subtitle: Text(_ticketLine(ticket)),
-                          trailing: ticket.match == null
-                              ? const Icon(Icons.hourglass_empty, color: AppColors.wheel)
-                              : Text(ticket.match!.label, style: const TextStyle(color: AppColors.wheel, fontWeight: FontWeight.w800)),
-                        ),
-                    ],
-                  );
-                },
+              if (_system != null && _system!.combinations.isNotEmpty)
+                _SystemPreview(result: _system!, onSave: (row) => _save(row, origin: 'sistemone')),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/more/se/tickets'),
+                  icon: const Icon(Icons.receipt_long_outlined, color: SeColors.forest),
+                  label: const Text('Vedi catalogo schedine e categorie'),
+                ),
               ),
             ],
           );
@@ -301,14 +310,6 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
       ),
     );
   }
-}
-
-String _ticketLine(SeTicket ticket) {
-  final when = formatItalianDate(ticket.targetDrawDate);
-  final star = ticket.superstar == null ? '' : ' · SuperStar ${ticket.superstar}';
-  if (ticket.match == null) return 'In attesa del $when$star · ${ticket.origin}';
-  final extra = ticket.match!.superstarMatched ? ' · SuperStar indovinata' : '';
-  return 'Concorso ${ticket.contestNumber} · ${ticket.match!.hits} numeri$extra · ${ticket.origin}';
 }
 
 class _SystemPreview extends StatelessWidget {

@@ -451,9 +451,9 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
-                        onPressed: () => context.push('/more/se-studio'),
+                        onPressed: () => context.push('/more/se/tickets'),
                         icon: const Icon(Icons.stars_outlined),
-                        label: const Text('Schedine SuperEnalotto'),
+                        label: const Text('Apri catalogo SuperEnalotto'),
                       ),
                     ),
                     Expanded(
