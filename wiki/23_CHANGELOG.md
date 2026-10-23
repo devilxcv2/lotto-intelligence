@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.10 — 2026-10-23
+
+Avviso aggiornamento più affidabile.
+
+- Controlla di nuovo al ritorno in app (non solo al primo avvio).
+- Riprova se la rete non è pronta; non silenzia più la versione se tocchi Scarica (solo «Più tardi»).
+- Intestazioni no-cache sul file di versione.
+
 ## 0.5.9 — 2026-10-23
 
 APK più leggero e menu meno dispersivi.

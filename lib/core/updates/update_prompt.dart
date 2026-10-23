@@ -1,5 +1,6 @@
 // lib/core/updates/update_prompt.dart
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -14,8 +15,8 @@ import '../settings/settings_controller.dart';
 import 'apk_downloader.dart';
 import 'app_update.dart';
 
-/// All'apertura dell'app, se c'è una versione più nuova, propone lo scarico.
-/// Si può scegliere l'ultima o una precedente se si è rimasti indietro.
+/// All'apertura (e al ritorno in primo piano) propone lo scarico se c'è una
+/// versione più nuova. «Più tardi» ricorda solo quella versione; Scarica no.
 class UpdatePrompt extends ConsumerStatefulWidget {
   const UpdatePrompt({required this.child, super.key});
 
@@ -25,13 +26,37 @@ class UpdatePrompt extends ConsumerStatefulWidget {
   ConsumerState<UpdatePrompt> createState() => _UpdatePromptState();
 }
 
-class _UpdatePromptState extends ConsumerState<UpdatePrompt> {
+class _UpdatePromptState extends ConsumerState<UpdatePrompt> with WidgetsBindingObserver {
+  DateTime? _lastAutoCheck;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) offerAppUpdate(context, ref);
+    WidgetsBinding.instance.addObserver(this);
+    // Ritardo breve: lascia partire splash/rete e non si sovrappone al popup serale.
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (mounted) _autoCheck();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _autoCheck();
+  }
+
+  Future<void> _autoCheck() async {
+    final now = DateTime.now();
+    if (_lastAutoCheck != null && now.difference(_lastAutoCheck!) < const Duration(minutes: 2)) {
+      return;
+    }
+    _lastAutoCheck = now;
+    await offerAppUpdate(context, ref);
   }
 
   @override
@@ -46,10 +71,10 @@ Future<void> offerAppUpdate(BuildContext context, WidgetRef ref, {bool ignoreDis
     if (ignoreDismiss) _snack(context, 'In Impostazioni manca l\'indirizzo del file di versione.');
     return;
   }
-  final catalog = await _fetchCatalog(ref.read(dioProvider), manifestUrl);
+  final catalog = await _fetchCatalog(ref.read(dioProvider), manifestUrl, retries: ignoreDismiss ? 1 : 3);
   if (!context.mounted) return;
   if (catalog == null) {
-    if (ignoreDismiss) _snack(context, 'Il file di versione non è leggibile.');
+    if (ignoreDismiss) _snack(context, 'Il file di versione non è leggibile. Controlla la rete e l\'indirizzo.');
     return;
   }
   final info = await PackageInfo.fromPlatform();
@@ -68,21 +93,23 @@ Future<void> offerAppUpdate(BuildContext context, WidgetRef ref, {bool ignoreDis
   final chosen = await showDialog<PublishedUpdate>(
     context: context,
     barrierDismissible: false,
+    useRootNavigator: true,
     builder: (context) => _VersionPickerDialog(
       installedName: info.version,
       installedCode: installed,
       available: available,
     ),
   );
+  // Solo «Più tardi» silenzia quella versione. Scarica può fallire: ripropone.
   if (chosen == null) {
     await repository.dismissUpdate(latest.versionCode);
     return;
   }
-  await repository.dismissUpdate(latest.versionCode);
   if (!context.mounted) return;
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
+    useRootNavigator: true,
     builder: (context) => _DownloadDialog(release: chosen, dio: ref.read(dioProvider)),
   );
 }
@@ -294,25 +321,50 @@ class _DownloadDialogState extends State<_DownloadDialog> {
   }
 }
 
-Future<UpdateCatalog?> _fetchCatalog(Dio dio, String url) async {
-  try {
-    final response = await dio.get<String>(
-      url,
-      options: Options(
-        responseType: ResponseType.plain,
-        receiveTimeout: const Duration(seconds: 12),
-        sendTimeout: const Duration(seconds: 12),
-        headers: {'User-Agent': 'LottoIntelligenceAI/0.5 (controllo versione)'},
-        validateStatus: (code) => code != null && code < 500,
-      ),
-    );
-    if ((response.statusCode ?? 500) >= 400) return null;
-    final body = response.data;
-    if (body == null || body.isEmpty) return null;
-    return parseUpdateCatalog(body);
-  } catch (_) {
-    return null;
+Future<UpdateCatalog?> _fetchCatalog(Dio dio, String url, {int retries = 3}) async {
+  Object? lastError;
+  for (var attempt = 0; attempt < retries; attempt++) {
+    if (attempt > 0) {
+      await Future<void>.delayed(Duration(seconds: 2 * attempt));
+    }
+    try {
+      final response = await dio.get<String>(
+        url,
+        options: Options(
+          responseType: ResponseType.plain,
+          receiveTimeout: const Duration(seconds: 15),
+          sendTimeout: const Duration(seconds: 15),
+          // Evita risposte cache vecchie del CDN GitHub.
+          headers: {
+            'User-Agent': 'LottoIntelligenceAI/0.5 (controllo versione)',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+          validateStatus: (code) => code != null && code < 500,
+        ),
+      );
+      if ((response.statusCode ?? 500) >= 400) {
+        lastError = 'HTTP ${response.statusCode}';
+        continue;
+      }
+      final body = response.data;
+      if (body == null || body.isEmpty) {
+        lastError = 'vuoto';
+        continue;
+      }
+      final catalog = parseUpdateCatalog(body);
+      if (catalog != null) return catalog;
+      lastError = 'JSON non valido';
+    } catch (error) {
+      lastError = error;
+    }
   }
+  assert(() {
+    // ignore: avoid_print
+    print('Aggiornamento: lettura manifesto fallita ($lastError)');
+    return true;
+  }());
+  return null;
 }
 
 bool _httpUrl(String url) {

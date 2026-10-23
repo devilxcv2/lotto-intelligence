@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.9",
-  "versionCode": 17,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.9/app-release.apk",
-  "notes": "APK più leggero (arm64 + minify) e menu Home/Lab/Altro meno dispersivi.",
+  "versionName": "0.5.10",
+  "versionCode": 18,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.10/app-release.apk",
+  "notes": "Avviso aggiornamento più affidabile (retry, controllo al ritorno in app).",
   "releases": [
+    {
+      "versionName": "0.5.10",
+      "versionCode": 18,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.10/app-release.apk",
+      "notes": "Fix avviso aggiornamento."
+    },
     {
       "versionName": "0.5.9",
       "versionCode": 17,
