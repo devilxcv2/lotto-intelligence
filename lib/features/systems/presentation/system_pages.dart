@@ -36,8 +36,9 @@ class LabHubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PageScaffold(
-      title: 'Laboratorio',
+      title: 'Lab',
       child: ListView(
+        padding: const EdgeInsets.only(bottom: 96),
         children: [
           HubSection(
             title: 'Giocate di studio',

@@ -78,21 +78,21 @@ class AppTheme {
       ),
       dividerColor: dark ? const Color(0xFF2A3A52) : AppColors.line,
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: scheme.surface,
-        elevation: 2,
-        shadowColor: const Color(0x14000000),
-        indicatorColor: scheme.primary.withValues(alpha: 0.14),
-        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        height: 68,
+        indicatorColor: AppColors.navy,
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.5), size: 24);
+          return IconThemeData(color: selected ? AppColors.ballText : scheme.onSurface.withValues(alpha: 0.45), size: 22);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return TextStyle(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.55),
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected ? Colors.white : scheme.onSurface.withValues(alpha: 0.5),
           );
         }),
       ),

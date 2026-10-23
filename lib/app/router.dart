@@ -160,6 +160,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ],
                 ),
                 GoRoute(path: 'settings', builder: (context, state) => const SettingsPage()),
+                GoRoute(path: 'info', builder: (context, state) => const InfoPage()),
                 GoRoute(path: 'diagnostics', builder: (context, state) => const DiagnosticsPage()),
               ],
             ),

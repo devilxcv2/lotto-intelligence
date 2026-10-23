@@ -34,10 +34,8 @@ class DashboardPage extends ConsumerWidget {
     return PageScaffold(
       title: 'Lotto Intelligence',
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
-          const DisclaimerBanner(),
-          const SizedBox(height: 16),
           AsyncBody<ArchiveSummary>(
             value: summary,
             onRetry: () => ref.invalidate(archiveSummaryProvider),

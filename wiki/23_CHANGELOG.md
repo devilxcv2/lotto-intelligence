@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.12 — 2026-10-24
+
+Menu più giovane, disclaimer fuori dalla Home.
+
+- Barra sotto flottante a pillola: Home · Extra · Ticket · Lab · Più, con icona piena quando sei lì.
+- Il testo sul caso non sta più in cima alla Home: sta in Più → Informazioni.
+- Hub «Più» con intestazione più vivace.
+
 ## 0.5.11 — 2026-10-24
 
 Area SuperEnalotto dedicata.

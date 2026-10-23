@@ -182,12 +182,15 @@ class SeHubPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: DisclaimerBanner(),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextButton(
+                    onPressed: () => context.push('/more/info'),
+                    child: const Text('Avvertenze e informazioni →'),
+                  ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 96),
               ],
             ),
           ),

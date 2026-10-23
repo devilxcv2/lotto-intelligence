@@ -9,7 +9,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/lotto/draw_validation.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/lotto/freshness.dart';
-import '../../../core/lotto/scientific_notice.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_controller.dart';
@@ -24,61 +23,146 @@ class MoreHubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F9FC),
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 980),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1B4E8C), Color(0xFF2F6EAD), Color(0xFFF0A01A)],
+                    ),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Più',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'serif',
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Impostazioni, SuperEnalotto, info. Tutto fuori dalla Home.',
+                        style: TextStyle(color: Colors.white70, height: 1.3),
+                      ),
+                    ],
+                  ),
+                ),
+                HubSection(
+                  title: 'Il tuo spazio',
+                  children: [
+                    HubTile(
+                      icon: Icons.tune_rounded,
+                      title: 'Impostazioni',
+                      subtitle: 'Tema, sync, budget, aggiornamenti',
+                      onTap: () => context.push('/more/settings'),
+                    ),
+                    HubTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Portafoglio',
+                      subtitle: 'Saldo simulato e limiti',
+                      onTap: () => context.push('/more/wallet'),
+                    ),
+                    HubTile(
+                      icon: Icons.insights_outlined,
+                      title: 'Statistiche',
+                      subtitle: 'Frequenze, ritardi, heatmap',
+                      onTap: () => context.push('/more/statistics'),
+                    ),
+                  ],
+                ),
+                HubSection(
+                  title: 'SuperEnalotto',
+                  subtitle: 'Area dedicata, separata dalle schedine Lotto.',
+                  children: [
+                    HubTile(
+                      icon: Icons.stars_rounded,
+                      title: 'Apri SuperEnalotto',
+                      subtitle: 'Hub, catalogo categorie, nuova schedina',
+                      onTap: () => context.push('/more/se'),
+                    ),
+                  ],
+                ),
+                HubSection(
+                  title: 'Scopri',
+                  children: [
+                    HubTile(
+                      icon: Icons.info_outline_rounded,
+                      title: 'Informazioni',
+                      subtitle: 'Avvertenze sul caso, cosa fa e non fa l\'app',
+                      onTap: () => context.push('/more/info'),
+                    ),
+                    HubTile(
+                      icon: Icons.menu_book_outlined,
+                      title: 'Wiki',
+                      subtitle: 'Visione, fonti, probabilità, build',
+                      onTap: () => context.push('/more/wiki'),
+                    ),
+                    HubTile(
+                      icon: Icons.health_and_safety_outlined,
+                      title: 'Diagnostica',
+                      subtitle: 'Archivio, buchi e stato sync',
+                      onTap: () => context.push('/more/diagnostics'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Avvertenze scientifiche e limiti: fuori dalla Home, qui in Altro.
+class InfoPage extends StatelessWidget {
+  const InfoPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return PageScaffold(
-      title: 'Altro',
+      title: 'Informazioni',
       child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
-          HubSection(
-            title: 'Account e studio',
-            children: [
-              HubTile(
-                icon: Icons.settings_outlined,
-                title: 'Impostazioni',
-                subtitle: 'Tema, sync, budget, aggiornamenti',
-                onTap: () => context.push('/more/settings'),
-              ),
-              HubTile(
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Portafoglio virtuale',
-                subtitle: 'Saldo simulato e limiti',
-                onTap: () => context.push('/more/wallet'),
-              ),
-              HubTile(
-                icon: Icons.insights_outlined,
-                title: 'Statistiche',
-                subtitle: 'Frequenze, ritardi, heatmap',
-                onTap: () => context.push('/more/statistics'),
-              ),
-            ],
+          Text('Avvertenza sul caso', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          const DisclaimerBanner(),
+          const SizedBox(height: 20),
+          Text('Cosa fa questa app', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          const Text(
+            'Archivia le estrazioni, descrive frequenze e ritardi, costruisce schedine di studio '
+            'e confronta gli esiti. Sul Lotto può mostrare poste e vincite simulate con la tabella ufficiale. '
+            'Sul SuperEnalotto registra categorie di premio, non importi inventati.',
           ),
-          HubSection(
-            title: 'SuperEnalotto',
-            subtitle: 'Area dedicata, separata dalle schedine Lotto.',
-            children: [
-              HubTile(
-                icon: Icons.stars_outlined,
-                title: 'SuperEnalotto',
-                subtitle: 'Hub, catalogo categorie, nuova schedina',
-                onTap: () => context.push('/more/se'),
-              ),
-            ],
+          const SizedBox(height: 16),
+          Text('Cosa non fa', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          const Text(
+            'Non compra giocate, non gestisce denaro reale, non prevede il prossimo estratto. '
+            'Un suggerimento è un\'ipotesi da confrontare con il passato, non una percentuale di affidabilità.',
           ),
-          HubSection(
-            title: 'Documentazione',
-            children: [
-              HubTile(
-                icon: Icons.menu_book_outlined,
-                title: 'Wiki',
-                subtitle: 'Visione, fonti, probabilità, build',
-                onTap: () => context.push('/more/wiki'),
-              ),
-              HubTile(
-                icon: Icons.health_and_safety_outlined,
-                title: 'Diagnostica fonti',
-                subtitle: 'Archivio, buchi e stato sync',
-                onTap: () => context.push('/more/diagnostics'),
-              ),
-            ],
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => context.push('/more/wiki'),
+            child: const Text('Apri la wiki'),
           ),
         ],
       ),
@@ -195,7 +279,12 @@ class SettingsPage extends ConsumerWidget {
             const _BudgetSection(),
             const Divider(),
             const _UpdateSection(),
-            const Padding(padding: EdgeInsets.all(16), child: Text(scientificDisclaimer)),
+            ListTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: const Text('Avvertenze sul caso'),
+              subtitle: const Text('Spiegate in Informazioni, non in Home'),
+              onTap: () => context.push('/more/info'),
+            ),
           ],
         ),
       ),
