@@ -12,7 +12,9 @@ import '../../features/draws/data/draw_repository.dart';
 import '../../features/superenalotto/data/se_ticket_repository.dart';
 import '../../features/superenalotto/data/superenalotto_repository.dart';
 import '../../features/superenalotto/data/superenalotto_sync.dart';
+import '../../features/virtual_wallet/data/auto_study_service.dart';
 import '../../features/virtual_wallet/data/wallet_repository.dart';
+import '../../features/virtual_wallet/domain/auto_study.dart';
 import '../database/app_database.dart';
 import '../lotto/freshness.dart';
 import '../notifications/notification_service.dart';
@@ -151,6 +153,15 @@ class EveningSync {
           superInserted: superInserted,
           superTickets: superTickets,
         );
+        if (outcome.evaluatedTickets.isNotEmpty) {
+          final wins = outcome.evaluatedTickets.where((ticket) => (ticket.evaluation?.netCents ?? 0) > 0).length;
+          await notifications?.showTicketEvaluations(
+            count: outcome.evaluatedTickets.length,
+            wins: wins,
+            netCents: net,
+            stakedCents: staked,
+          );
+        }
       }
       if (newDraw) return EveningSyncResult.newDraw(after.latestDate!.toUtc(), outcome.evaluatedTickets.length);
     }
@@ -164,9 +175,25 @@ class EveningSync {
     required NotificationService? notifications,
   }) async {
     final settings = await SettingsRepository(db).load();
-    if (!settings.notificationsEnabled) return;
     if (!isDrawWeekday(now)) return;
-    await notifications?.showPreDrawReminder(drawDate: DateTime(now.year, now.month, now.day));
+    if (settings.notificationsEnabled) {
+      await notifications?.showPreDrawReminder(drawDate: DateTime(now.year, now.month, now.day));
+    }
+    // Prima della chiusura: crea la schedina di studio automatica, se attiva.
+    final auto = AutoStudyService(
+      settingsRepository: SettingsRepository(db),
+      wallet: WalletRepository(db),
+      draws: DrawRepository(db),
+    );
+    final created = await auto.ensureTicket(now: now, settings: settings);
+    if (created.created && settings.notificationsEnabled) {
+      await notifications?.showAutoTicketCreated(
+        methodLabel: created.method!.label,
+        wheelCode: settings.selectedWheelCode,
+        numbers: created.numbers,
+        targetDrawDate: nextOpenDrawDate(now),
+      );
+    }
   }
 
   static Future<void> _scheduleRetry(int attempt) async {

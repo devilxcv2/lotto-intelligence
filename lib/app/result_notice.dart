@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../core/settings/app_settings.dart';
 import '../features/draws/data/archive_sync.dart';
 import '../features/superenalotto/data/superenalotto_sync.dart';
+import '../features/virtual_wallet/data/wallet_repository.dart';
 import 'theme/app_theme.dart';
 
 /// Avviso a schermo, oltre alla notifica di sistema: compare quando uno
@@ -23,6 +24,30 @@ class ResultNotice {
 }
 
 final resultNoticeProvider = StateProvider<ResultNotice?>((ref) => null);
+
+/// Popup a tutto schermo dopo una valutazione automatica (sempre, anche senza sync UI).
+void publishTicketEvaluations(WidgetRef ref, List<StoredTicket> tickets) {
+  if (tickets.isEmpty) return;
+  final wins = [for (final ticket in tickets) if ((ticket.evaluation?.netCents ?? 0) > 0) ticket];
+  final net = wins.fold<int>(0, (sum, ticket) => sum + (ticket.evaluation?.netCents ?? 0));
+  final staked = tickets.fold<int>(0, (sum, ticket) => sum + ticket.stakeCents);
+  final lines = <String>[
+    wins.isEmpty
+        ? 'Confrontate ${tickets.length} schedine: nessuna vincita simulata (posta ${formatEuro(staked)}).'
+        : 'Confrontate ${tickets.length} schedine: ${wins.length} con vincita simulata, netto ${formatEuro(net)} su ${formatEuro(staked)}.',
+    for (final ticket in tickets.take(8))
+      '${ticket.isAutoStudy ? 'Auto · ' : ''}${ticket.coversAllWheels ? 'Tutte' : ticket.wheelCode}: '
+          '${ticket.evaluation?.hits ?? 0} centri, netto ${formatEuro(ticket.evaluation?.netCents ?? 0)}'
+          '${ticket.numbers.isEmpty ? '' : ' · ${ticket.numbers.join(' ')}'}.',
+    if (tickets.length > 8) '… e altre ${tickets.length - 8}.',
+  ];
+  final current = ref.read(resultNoticeProvider);
+  final incoming = ResultNotice(
+    title: wins.isEmpty ? 'Catalogo esiti aggiornato' : 'Vincite simulate',
+    lines: lines,
+  );
+  ref.read(resultNoticeProvider.notifier).state = current == null ? incoming : current.merge(incoming);
+}
 
 class ResultNoticeHost extends ConsumerWidget {
   const ResultNoticeHost({required this.child, super.key});

@@ -21,6 +21,8 @@ class NotificationService {
   static const newDrawId = 1001;
   static const preDrawId = 1002;
   static const archiveCheckId = 1003;
+  static const autoTicketId = 1004;
+  static const evaluationId = 1005;
   static const ticketsRoute = '/tickets';
   static const dashboardRoute = '/dashboard';
 
@@ -111,6 +113,64 @@ class NotificationService {
           channelDescription: 'Promemoria quando sta per chiudere la raccolta e i risultati non sono ancora online.',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
+          styleInformation: BigTextStyleInformation(body),
+        ),
+      ),
+    );
+  }
+
+  Future<void> showAutoTicketCreated({
+    required String methodLabel,
+    required String wheelCode,
+    required List<int> numbers,
+    required DateTime targetDrawDate,
+  }) async {
+    if (!supported) return;
+    await initialize();
+    final body =
+        'Schedina $methodLabel su $wheelCode per il ${formatItalianDate(targetDrawDate)}: '
+        '${numbers.join(' · ')}. L\'app la confronterà con l\'estrazione e ti avviserà.';
+    await _plugin.show(
+      id: autoTicketId,
+      title: 'Schedina di studio creata',
+      body: body,
+      payload: ticketsRoute,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          reminderChannelId,
+          'Avvisi pre-estrazione',
+          channelDescription: 'Promemoria quando sta per chiudere la raccolta e i risultati non sono ancora online.',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          styleInformation: BigTextStyleInformation(body),
+        ),
+      ),
+    );
+  }
+
+  Future<void> showTicketEvaluations({
+    required int count,
+    required int wins,
+    required int netCents,
+    required int stakedCents,
+  }) async {
+    if (!supported || count <= 0) return;
+    await initialize();
+    final body = wins > 0
+        ? 'Confrontate $count schedine: $wins con vincita simulata (netto ${formatEuro(netCents)} su ${formatEuro(stakedCents)}). Apri il catalogo.'
+        : 'Confrontate $count schedine: nessuna vincita simulata su ${formatEuro(stakedCents)} di posta.';
+    await _plugin.show(
+      id: evaluationId,
+      title: wins > 0 ? 'Vincite simulate' : 'Esiti schedine',
+      body: body,
+      payload: ticketsRoute,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          resultsChannelId,
+          'Esiti delle estrazioni',
+          channelDescription: 'Avviso quando una nuova estrazione entra nell\'archivio locale.',
+          importance: Importance.high,
+          priority: Priority.high,
           styleInformation: BigTextStyleInformation(body),
         ),
       ),

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../features/virtual_wallet/domain/auto_study.dart';
+
 /// Come il portafoglio simulato tratta i tetti di spesa.
 enum BudgetMode {
   /// Concorso, mese e capitale bloccano la registrazione.
@@ -38,6 +40,8 @@ class AppSettings {
     required this.liveSyncEnabled,
     required this.notificationsEnabled,
     required this.budgetMode,
+    required this.autoStudyEnabled,
+    required this.autoStudyMethod,
     required this.virtualCapitalCents,
     required this.contestBudgetCents,
     required this.monthlyBudgetCents,
@@ -54,6 +58,10 @@ class AppSettings {
 
   /// Se i limiti simulati devono bloccare le schedine.
   final BudgetMode budgetMode;
+
+  /// L'app crea da sola una schedina di studio per il prossimo concorso.
+  final bool autoStudyEnabled;
+  final AutoStudyMethod autoStudyMethod;
   final int virtualCapitalCents;
   final int contestBudgetCents;
   final int monthlyBudgetCents;
@@ -66,6 +74,8 @@ class AppSettings {
     liveSyncEnabled: true,
     notificationsEnabled: true,
     budgetMode: BudgetMode.limits,
+    autoStudyEnabled: false,
+    autoStudyMethod: AutoStudyMethod.zoppe,
     virtualCapitalCents: 10000,
     contestBudgetCents: 500,
     monthlyBudgetCents: 2000,
@@ -79,6 +89,8 @@ class AppSettings {
     bool? liveSyncEnabled,
     bool? notificationsEnabled,
     BudgetMode? budgetMode,
+    bool? autoStudyEnabled,
+    AutoStudyMethod? autoStudyMethod,
     int? virtualCapitalCents,
     int? contestBudgetCents,
     int? monthlyBudgetCents,
@@ -91,6 +103,8 @@ class AppSettings {
       liveSyncEnabled: liveSyncEnabled ?? this.liveSyncEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       budgetMode: budgetMode ?? this.budgetMode,
+      autoStudyEnabled: autoStudyEnabled ?? this.autoStudyEnabled,
+      autoStudyMethod: autoStudyMethod ?? this.autoStudyMethod,
       virtualCapitalCents: virtualCapitalCents ?? this.virtualCapitalCents,
       contestBudgetCents: contestBudgetCents ?? this.contestBudgetCents,
       monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,

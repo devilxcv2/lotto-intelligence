@@ -11,6 +11,7 @@ import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/prize_table.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/app_settings.dart';
+import '../domain/auto_study.dart';
 
 class BudgetDecision {
   const BudgetDecision.allowed() : allowed = true, message = null;
@@ -30,6 +31,7 @@ class TicketEvaluation {
     required this.netCents,
     required this.hitsByWheel,
     required this.grossBySorte,
+    required this.hitNumbers,
     required this.note,
   });
 
@@ -40,7 +42,10 @@ class TicketEvaluation {
   final int netCents;
   final Map<String, int> hitsByWheel;
   final Map<LottoSorte, int> grossBySorte;
+  final Set<int> hitNumbers;
   final String note;
+
+  bool get isWin => netCents > 0;
 }
 
 class StoredTicket {
@@ -74,6 +79,7 @@ class StoredTicket {
   bool get isLegacy => status == 'legacy';
   bool get coversAllWheels => wheelCode == allWheelsCode;
   int get wheelsCovered => coversAllWheels ? 10 : 1;
+  bool get isAutoStudy => isAutoStudyNote(note);
 
   /// Netto meno posta; null finché non c'è un esito con importi.
   int? get balanceCents => evaluation == null || isLegacy ? null : evaluation!.netCents - stakeCents;
@@ -285,11 +291,14 @@ class WalletRepository {
               ..where((row) => row.ticketId.equals(ticket.id))
               ..orderBy([(row) => OrderingTerm.asc(row.position)]))
             .get();
-        final outcome = evaluateTicket(
-          played: [for (final row in numbers) row.number],
-          stakes: _stakesOf(ticket),
-          drawnByWheel: {for (final code in wheels) code: published[code]!.numbers},
-        );
+        final played = [for (final row in numbers) row.number];
+        final drawnByWheel = {for (final code in wheels) code: published[code]!.numbers};
+        final outcome = evaluateTicket(played: played, stakes: _stakesOf(ticket), drawnByWheel: drawnByWheel);
+        final hitNumbers = <int>{
+          for (final drawn in drawnByWheel.values)
+            for (final number in played)
+              if (drawn.contains(number)) number,
+        };
         await _db.transaction(() async {
           await _db.into(_db.ticketResults).insert(TicketResultsCompanion.insert(
                 ticketId: ticket.id,
@@ -302,6 +311,7 @@ class WalletRepository {
                 detailJson: Value(jsonEncode({
                   'hitsByWheel': outcome.hitsByWheel,
                   'grossBySorte': {for (final item in outcome.perSorte) item.sorte.name: item.grossCents},
+                  'hitNumbers': hitNumbers.toList()..sort(),
                   'drawDate': formatIsoDate(entry.key),
                 })),
               ));
@@ -415,6 +425,13 @@ class WalletRepository {
     if (drawDate == null && detail['drawDate'] is String) {
       drawDate = DateTime.tryParse('${detail['drawDate']}T00:00:00Z');
     }
+    final hitNumbers = <int>{};
+    if (detail['hitNumbers'] is List) {
+      for (final item in detail['hitNumbers'] as List) {
+        final number = item is int ? item : int.tryParse('$item');
+        if (number != null) hitNumbers.add(number);
+      }
+    }
     return TicketEvaluation(
       evaluatedAt: row.evaluatedAt,
       drawDate: drawDate?.toUtc(),
@@ -423,8 +440,23 @@ class WalletRepository {
       netCents: row.netCents ?? 0,
       hitsByWheel: hitsByWheel,
       grossBySorte: grossBySorte,
+      hitNumbers: hitNumbers,
       note: row.outcomeNote,
     );
+  }
+
+  /// C'è già una schedina automatica aperta per quel concorso e metodo?
+  Future<bool> hasOpenAutoTicket({required DateTime targetDrawDate, required AutoStudyMethod method}) async {
+    final target = dateOnlyUtc(targetDrawDate);
+    final open = await (_db.select(_db.virtualTickets)..where((row) => row.status.equals('open'))).get();
+    return open.any((row) {
+      final date = row.targetDrawDate;
+      if (date == null) return false;
+      final day = dateOnlyUtc(date);
+      final sameDay = day.year == target.year && day.month == target.month && day.day == target.day;
+      final note = row.note ?? '';
+      return sameDay && (note == method.noteTag || note.startsWith('${method.noteTag}.'));
+    });
   }
 }
 

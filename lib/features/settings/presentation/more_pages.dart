@@ -17,6 +17,7 @@ import '../../../core/settings/settings_repository.dart';
 import '../../../core/updates/update_prompt.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../../draws/data/draw_repository.dart';
+import '../../virtual_wallet/domain/auto_study.dart';
 
 class MoreHubPage extends StatelessWidget {
   const MoreHubPage({super.key});
@@ -115,7 +116,7 @@ class SettingsPage extends ConsumerWidget {
               title: const Text('Notifiche estrazione'),
               subtitle: const Text(
                 'Alle 19:00 avvisa che sta per estrarre; alle 20:15 che sta scaricando lo ZIP; '
-                'poi quando la nuova estrazione è in archivio. Nessun server.',
+                'poi quando la nuova estrazione è in archivio e quando le schedine sono confrontate. Nessun server.',
               ),
               value: value.notificationsEnabled,
               onChanged: (enabled) async {
@@ -123,6 +124,53 @@ class SettingsPage extends ConsumerWidget {
                 if (enabled) await NotificationService.instance.requestPermission();
               },
             ),
+            SwitchListTile(
+              title: const Text('Schedine automatiche di studio'),
+              subtitle: Text(
+                value.autoStudyEnabled
+                    ? 'L\'app crea da sola una schedina (${value.autoStudyMethod.label}) sulla ruota ${value.selectedWheelCode} '
+                        'per ogni concorso, la valuta con lo ZIP e ti notifica. Puoi spegnerla quando vuoi.'
+                    : 'Se la attivi, l\'app prepara una giocata ipotetica per il prossimo concorso, '
+                        'controlla eventuali vincite simulate e te lo comunica con popup e notifica.',
+              ),
+              value: value.autoStudyEnabled,
+              onChanged: (enabled) async {
+                await ref.read(settingsControllerProvider.notifier).setAutoStudy(enabled: enabled);
+                if (enabled && value.notificationsEnabled) {
+                  await NotificationService.instance.requestPermission();
+                }
+              },
+            ),
+            if (value.autoStudyEnabled)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Metodo automatico', style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    SegmentedButton<AutoStudyMethod>(
+                      segments: const [
+                        ButtonSegment(value: AutoStudyMethod.zoppe, label: Text('Zoppe')),
+                        ButtonSegment(value: AutoStudyMethod.delays, label: Text('Ritardi')),
+                        ButtonSegment(value: AutoStudyMethod.frequent, label: Text('Frequenti')),
+                      ],
+                      selected: {value.autoStudyMethod},
+                      onSelectionChanged: (selection) {
+                        ref.read(settingsControllerProvider.notifier).setAutoStudy(
+                              enabled: true,
+                              method: selection.first,
+                            );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Usa la ruota selezionata in Home (${value.selectedWheelCode}). Posta: 1 € sull\'ambo (o il costo unità in portafoglio).',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
             const Divider(),
             const _BudgetSection(),
             const Divider(),

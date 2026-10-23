@@ -12,7 +12,10 @@ import '../core/settings/settings_controller.dart';
 import '../features/draws/data/archive_sync.dart';
 import '../features/draws/data/draw_repository.dart';
 import '../features/superenalotto/data/superenalotto_sync.dart';
+import '../features/virtual_wallet/data/auto_study_service.dart';
 import '../features/virtual_wallet/data/wallet_repository.dart';
+import '../features/virtual_wallet/domain/auto_study.dart';
+import 'result_notice.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
 
@@ -56,6 +59,7 @@ class LiveSyncHost extends ConsumerStatefulWidget {
 class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBindingObserver {
   Timer? _timer;
   (bool, bool)? _applied;
+  var _bootstrapped = false;
 
   @override
   void initState() {
@@ -84,15 +88,45 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
     if (state != AppLifecycleState.resumed) return;
     ref.invalidate(archiveSummaryProvider);
     ref.invalidate(wheelDrawsProvider);
-    unawaited(_evaluateTickets());
+    unawaited(_evaluateTickets(showPopup: true));
+    unawaited(_ensureAutoStudy());
     unawaited(_tick());
   }
 
-  Future<void> _evaluateTickets() async {
+  Future<void> _evaluateTickets({required bool showPopup}) async {
     final evaluated = await ref.read(walletRepositoryProvider).evaluateOpenTickets();
-    if (evaluated.isNotEmpty) {
-      ref.invalidate(ticketsProvider);
-      ref.invalidate(walletSummaryProvider);
+    if (evaluated.isEmpty) return;
+    ref.invalidate(ticketsProvider);
+    ref.invalidate(walletSummaryProvider);
+    if (showPopup) publishTicketEvaluations(ref, evaluated);
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings?.notificationsEnabled == true) {
+      final wins = evaluated.where((ticket) => (ticket.evaluation?.netCents ?? 0) > 0).length;
+      final net = evaluated.fold<int>(0, (sum, ticket) => sum + (ticket.evaluation?.netCents ?? 0));
+      final staked = evaluated.fold<int>(0, (sum, ticket) => sum + ticket.stakeCents);
+      await NotificationService.instance.showTicketEvaluations(
+        count: evaluated.length,
+        wins: wins,
+        netCents: net,
+        stakedCents: staked,
+      );
+    }
+  }
+
+  Future<void> _ensureAutoStudy() async {
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings == null || !settings.autoStudyEnabled) return;
+    final result = await ref.read(autoStudyServiceProvider).ensureTicket(settings: settings);
+    if (!result.created) return;
+    ref.invalidate(ticketsProvider);
+    ref.invalidate(walletSummaryProvider);
+    if (settings.notificationsEnabled) {
+      await NotificationService.instance.showAutoTicketCreated(
+        methodLabel: result.method!.label,
+        wheelCode: settings.selectedWheelCode,
+        numbers: result.numbers,
+        targetDrawDate: nextOpenDrawDate(DateTime.now()),
+      );
     }
   }
 
@@ -134,6 +168,13 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
     final settings = ref.watch(settingsControllerProvider).value;
     if (settings != null) {
       _applySchedule(liveSync: settings.liveSyncEnabled, notifications: settings.notificationsEnabled);
+      if (!_bootstrapped) {
+        _bootstrapped = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          unawaited(_ensureAutoStudy());
+          unawaited(_evaluateTickets(showPopup: true));
+        });
+      }
     }
     return widget.child;
   }

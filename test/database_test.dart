@@ -8,6 +8,7 @@ import 'package:lotto_intelligence/core/lotto/archive_parser.dart';
 import 'package:lotto_intelligence/core/settings/app_settings.dart';
 import 'package:lotto_intelligence/features/draws/data/draw_repository.dart';
 import 'package:lotto_intelligence/features/virtual_wallet/data/wallet_repository.dart';
+import 'package:lotto_intelligence/features/virtual_wallet/domain/auto_study.dart';
 
 void main() {
   test('il database semina le ruote e non duplica le estrazioni', () async {
@@ -78,6 +79,8 @@ void main() {
       liveSyncEnabled: false,
       notificationsEnabled: true,
       budgetMode: BudgetMode.limits,
+      autoStudyEnabled: false,
+      autoStudyMethod: AutoStudyMethod.zoppe,
       virtualCapitalCents: 200,
       contestBudgetCents: 100,
       monthlyBudgetCents: 150,

@@ -17,7 +17,10 @@ import '../../draws/data/archive_sync.dart';
 import '../../draws/data/draw_repository.dart';
 import '../../statistics/data/statistics_providers.dart';
 import '../../systems/domain/zoppe_system.dart';
+import '../../../app/result_notice.dart';
+import '../data/auto_study_service.dart';
 import '../data/wallet_repository.dart';
+import '../domain/auto_study.dart';
 
 /// Rotta della pagina «Nuova schedina», con numeri e ruota precompilati.
 String newTicketRoute({List<int>? numbers, String? wheel}) {
@@ -350,13 +353,20 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
   @override
   void initState() {
     super.initState();
-    // Chi apre la pagina (anche da una notifica) vede subito gli esiti che
-    // l'archivio permette di calcolare.
     Future.microtask(() async {
       final evaluated = await ref.read(walletRepositoryProvider).evaluateOpenTickets();
       if (evaluated.isNotEmpty) {
         ref.invalidate(ticketsProvider);
         ref.invalidate(walletSummaryProvider);
+        if (mounted) publishTicketEvaluations(ref, evaluated);
+      }
+      final settings = ref.read(settingsControllerProvider).value;
+      if (settings?.autoStudyEnabled == true) {
+        final created = await ref.read(autoStudyServiceProvider).ensureTicket(settings: settings);
+        if (created.created) {
+          ref.invalidate(ticketsProvider);
+          ref.invalidate(walletSummaryProvider);
+        }
       }
     });
   }
@@ -371,7 +381,7 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
         title: const Text('Schedine ipotetiche'),
         actions: [
           IconButton(
-            tooltip: 'Aggiorna archivio',
+            tooltip: 'Aggiorna archivio e controlla vincite',
             onPressed: sync.running ? null : () => ref.read(archiveSyncProvider.notifier).syncOfficial(),
             icon: const Icon(Icons.sync),
           ),
@@ -391,23 +401,51 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
               value: tickets,
               onRetry: () => ref.invalidate(ticketsProvider),
               data: (items) {
+                final wins = items.where((t) => t.evaluation?.isWin == true).length;
+                final autos = items.where((t) => t.isAutoStudy).length;
                 final shown = switch (_filter) {
                   'open' => items.where((t) => t.isOpen).toList(),
                   'evaluated' => items.where((t) => !t.isOpen).toList(),
+                  'wins' => items.where((t) => t.evaluation?.isWin == true).toList(),
+                  'auto' => items.where((t) => t.isAutoStudy).toList(),
                   _ => items,
                 };
+                final catalog = _catalogByDraw(shown);
                 return Column(
                   children: [
+                    if (settings?.autoStudyEnabled == true)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Text(
+                          'Creazione automatica attiva (${settings!.autoStudyMethod.label} su ${settings.selectedWheelCode}): '
+                          'l\'app prepara una schedina per il prossimo concorso e ti notifica gli esiti.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: SegmentedButton<String>(
-                        segments: [
-                          ButtonSegment(value: 'all', label: Text('Tutte (${items.length})')),
-                          ButtonSegment(value: 'open', label: Text('In attesa (${items.where((t) => t.isOpen).length})')),
-                          ButtonSegment(value: 'evaluated', label: Text('Valutate (${items.where((t) => !t.isOpen).length})')),
-                        ],
-                        selected: {_filter},
-                        onSelectionChanged: (value) => setState(() => _filter = value.first),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final entry in [
+                              ('all', 'Tutte (${items.length})'),
+                              ('open', 'In attesa (${items.where((t) => t.isOpen).length})'),
+                              ('evaluated', 'Valutate (${items.where((t) => !t.isOpen).length})'),
+                              ('wins', 'Vincite ($wins)'),
+                              ('auto', 'Auto ($autos)'),
+                            ])
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
+                                  label: Text(entry.$2),
+                                  selected: _filter == entry.$1,
+                                  onSelected: (_) => setState(() => _filter = entry.$1),
+                                  showCheckmark: false,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                     Align(
@@ -423,8 +461,25 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
                           ? const _EmptyTickets()
                           : ListView.builder(
                               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                              itemCount: shown.length,
-                              itemBuilder: (context, index) => _TicketCard(ticket: shown[index]),
+                              itemCount: catalog.length,
+                              itemBuilder: (context, index) {
+                                final section = catalog[index];
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8, bottom: 6),
+                                      child: ResultsBanner(section.title),
+                                    ),
+                                    if (section.subtitle != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 6),
+                                        child: Text(section.subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                                      ),
+                                    for (final ticket in section.tickets) _TicketCard(ticket: ticket),
+                                  ],
+                                );
+                              },
                             ),
                     ),
                   ],
@@ -436,6 +491,47 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
       ),
     );
   }
+}
+
+class _CatalogSection {
+  const _CatalogSection({required this.title, required this.tickets, this.subtitle});
+
+  final String title;
+  final String? subtitle;
+  final List<StoredTicket> tickets;
+}
+
+List<_CatalogSection> _catalogByDraw(List<StoredTicket> tickets) {
+  final open = tickets.where((t) => t.isOpen).toList();
+  final byDate = <DateTime, List<StoredTicket>>{};
+  for (final ticket in tickets.where((t) => !t.isOpen)) {
+    final raw = ticket.evaluation?.drawDate ?? ticket.targetDrawDate ?? ticket.createdAt;
+    final key = DateTime.utc(raw.toUtc().year, raw.toUtc().month, raw.toUtc().day);
+    byDate.putIfAbsent(key, () => []).add(ticket);
+  }
+  final dates = byDate.keys.toList()..sort((a, b) => b.compareTo(a));
+  return [
+    if (open.isNotEmpty)
+      _CatalogSection(
+        title: 'In attesa del concorso',
+        subtitle: '${open.length} schedine: saranno confrontate quando lo ZIP ufficiale avrà quella data.',
+        tickets: open,
+      ),
+    for (final date in dates)
+      _CatalogSection(
+        title: 'Concorso del ${formatItalianDate(date)}',
+        subtitle: () {
+          final group = byDate[date]!;
+          final wins = group.where((t) => t.evaluation?.isWin == true).length;
+          final net = group.fold<int>(0, (sum, t) => sum + (t.evaluation?.netCents ?? 0));
+          final stake = group.fold<int>(0, (sum, t) => sum + t.stakeCents);
+          return wins == 0
+              ? '${group.length} schedine · nessuna vincita simulata · posta ${formatEuro(stake)}'
+              : '${group.length} schedine · $wins vincite · netto ${formatEuro(net)} su ${formatEuro(stake)}';
+        }(),
+        tickets: byDate[date]!,
+      ),
+  ];
 }
 
 class _EmptyTickets extends StatelessWidget {
@@ -472,6 +568,7 @@ class _TicketCard extends StatelessWidget {
     final evaluation = ticket.evaluation;
     final theme = Theme.of(context);
     final wheelName = ticket.coversAllWheels ? 'Tutte le ruote' : (wheelByCode(ticket.wheelCode)?.name ?? ticket.wheelCode);
+    final hits = evaluation?.hitNumbers ?? const <int>{};
     Widget status;
     if (ticket.isOpen) {
       status = Chip(
@@ -480,7 +577,7 @@ class _TicketCard extends StatelessWidget {
       );
     } else if (ticket.isLegacy) {
       status = Chip(label: Text(evaluation == null ? 'Solo centri, non valutata' : 'Centri: ${evaluation.hits}'));
-    } else if (evaluation != null && evaluation.netCents > 0) {
+    } else if (evaluation != null && evaluation.isWin) {
       status = Chip(
         avatar: const Icon(Icons.emoji_events_outlined, size: 16, color: AppColors.gold),
         label: Text('Netto ${formatEuro(evaluation.netCents)} · ${evaluation.hits} centri'),
@@ -501,18 +598,21 @@ class _TicketCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('$wheelName · ${formatEuro(ticket.stakeCents)}', style: theme.textTheme.titleMedium)),
+                  Expanded(
+                    child: Text(
+                      '${ticket.isAutoStudy ? 'Auto · ' : ''}$wheelName · ${formatEuro(ticket.stakeCents)}',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
                   Text(formatItalianDate(ticket.createdAt), style: theme.textTheme.labelSmall),
                 ],
               ),
+              if (ticket.isAutoStudy && ticket.note != null) ...[
+                const SizedBox(height: 4),
+                Text(ticket.note!, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final number in ticket.numbers) _Ball(number: number, hit: false),
-                ],
-              ),
+              NumberBalls(numbers: ticket.numbers, hits: hits, compact: true),
               const SizedBox(height: 8),
               Row(
                 children: [

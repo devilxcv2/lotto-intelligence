@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/database_provider.dart';
+import '../../features/virtual_wallet/domain/auto_study.dart';
 import 'app_settings.dart';
 import 'settings_repository.dart';
 
@@ -24,6 +25,13 @@ class SettingsController extends AsyncNotifier<AppSettings> {
   Future<void> setNotifications(bool enabled) => _update((settings) => settings.copyWith(notificationsEnabled: enabled));
 
   Future<void> setBudgetMode(BudgetMode mode) => _update((settings) => settings.copyWith(budgetMode: mode));
+
+  Future<void> setAutoStudy({required bool enabled, AutoStudyMethod? method}) {
+    return _update((settings) => settings.copyWith(
+          autoStudyEnabled: enabled,
+          autoStudyMethod: method,
+        ));
+  }
 
   Future<void> setBudgets({
     required int virtualCapitalCents,

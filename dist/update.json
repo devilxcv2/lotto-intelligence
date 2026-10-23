@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.7",
-  "versionCode": 15,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.7/app-debug.apk",
-  "notes": "Popup e notifica prima dell'estrazione. Timeline chiara: 19:30 chiusura, risultati tipici verso 20:30, ZIP automatico dalle 20:15.",
+  "versionName": "0.5.8",
+  "versionCode": 16,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.8/app-debug.apk",
+  "notes": "Catalogo schedine per concorso, popup sempre sugli esiti, schedine automatiche di studio con notifiche.",
   "releases": [
+    {
+      "versionName": "0.5.8",
+      "versionCode": 16,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.8/app-debug.apk",
+      "notes": "Catalogo esiti e auto-schedine."
+    },
     {
       "versionName": "0.5.7",
       "versionCode": 15,
@@ -21,12 +27,6 @@
       "versionCode": 13,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.5/app-debug.apk",
       "notes": "Scarico in app con avanzamento e scelta della versione."
-    },
-    {
-      "versionName": "0.5.4",
-      "versionCode": 12,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.4/app-debug.apk",
-      "notes": "Schedina in quattro passi e Zoppe dalla nuova giocata."
     }
   ]
 }

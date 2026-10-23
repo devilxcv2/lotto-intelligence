@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../features/virtual_wallet/domain/auto_study.dart';
 import '../database/app_database.dart';
 import 'app_settings.dart';
 
@@ -16,6 +17,8 @@ class SettingsRepository {
   static const liveSyncKey = 'live_sync_enabled';
   static const notificationsKey = 'notifications_enabled';
   static const budgetModeKey = 'budget_mode';
+  static const autoStudyKey = 'auto_study_enabled';
+  static const autoStudyMethodKey = 'auto_study_method';
   static const capitalKey = 'virtual_capital_cents';
   static const contestBudgetKey = 'contest_budget_cents';
   static const monthlyBudgetKey = 'monthly_budget_cents';
@@ -48,6 +51,8 @@ class SettingsRepository {
       liveSyncEnabled: values[liveSyncKey] != 'false',
       notificationsEnabled: values[notificationsKey] != 'false',
       budgetMode: _budgetMode(values[budgetModeKey]),
+      autoStudyEnabled: values[autoStudyKey] == 'true',
+      autoStudyMethod: parseAutoStudyMethod(values[autoStudyMethodKey]) ?? AppSettings.initial.autoStudyMethod,
       virtualCapitalCents: int.tryParse(values[capitalKey] ?? '') ?? AppSettings.initial.virtualCapitalCents,
       contestBudgetCents: int.tryParse(values[contestBudgetKey] ?? '') ?? AppSettings.initial.contestBudgetCents,
       monthlyBudgetCents: int.tryParse(values[monthlyBudgetKey] ?? '') ?? AppSettings.initial.monthlyBudgetCents,
@@ -77,6 +82,8 @@ class SettingsRepository {
     await _write(liveSyncKey, settings.liveSyncEnabled ? 'true' : 'false');
     await _write(notificationsKey, settings.notificationsEnabled ? 'true' : 'false');
     await _write(budgetModeKey, settings.budgetMode.name);
+    await _write(autoStudyKey, settings.autoStudyEnabled ? 'true' : 'false');
+    await _write(autoStudyMethodKey, settings.autoStudyMethod.name);
     await _write(capitalKey, '${settings.virtualCapitalCents}');
     await _write(contestBudgetKey, '${settings.contestBudgetCents}');
     await _write(monthlyBudgetKey, '${settings.monthlyBudgetCents}');

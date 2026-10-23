@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.8 — 2026-10-23
+
+Schedine che si arrangiano da sole.
+
+- Elenco a catalogo per concorso, filtri Vincite/Auto, palline colpite evidenziate.
+- Popup a schermo sempre quando ci sono nuovi esiti (anche aprendo Schedine o tornando in app).
+- Opzione «Schedine automatiche»: l’app crea Zoppe/ritardi/frequenti per il prossimo concorso, valuta con lo ZIP e notifica.
+
 ## 0.5.7 — 2026-10-23
 
 Serata di estrazione più chiara.
