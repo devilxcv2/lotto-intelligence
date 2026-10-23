@@ -93,11 +93,15 @@ class SettingsPage extends ConsumerWidget {
                 },
               ),
             ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(drawEveningTimeline),
+            ),
             SwitchListTile(
               title: const Text('Aggiornamento serale automatico'),
               subtitle: const Text(
-                'Nei giorni di estrazione, dalle 20:15, scarica l\'archivio anche ad app chiusa e confronta le schedine ipotetiche. '
-                'Riprova ogni 20 minuti fino alle 23 se l\'esito non è ancora pubblicato. Android può posticiparlo in risparmio energetico.',
+                'Scarica da sola lo ZIP ufficiale dalle 20:15 (riprova fino alle 23) e confronta le schedine. '
+                'I risultati non sono subito dopo le 19:30: di solito verso le 20:30. Android può posticipare il task in risparmio energetico.',
               ),
               value: value.liveSyncEnabled,
               onChanged: (enabled) async {
@@ -108,15 +112,16 @@ class SettingsPage extends ConsumerWidget {
               },
             ),
             SwitchListTile(
-              title: const Text('Notifica a nuova estrazione'),
-              subtitle: const Text('Avviso locale, senza server, quando una nuova estrazione entra in archivio: tocca per vedere gli esiti delle schedine.'),
+              title: const Text('Notifiche estrazione'),
+              subtitle: const Text(
+                'Alle 19:00 avvisa che sta per estrarre; alle 20:15 che sta scaricando lo ZIP; '
+                'poi quando la nuova estrazione è in archivio. Nessun server.',
+              ),
               value: value.notificationsEnabled,
-              onChanged: !value.liveSyncEnabled
-                  ? null
-                  : (enabled) async {
-                      await ref.read(settingsControllerProvider.notifier).setNotifications(enabled);
-                      if (enabled) await NotificationService.instance.requestPermission();
-                    },
+              onChanged: (enabled) async {
+                await ref.read(settingsControllerProvider.notifier).setNotifications(enabled);
+                if (enabled) await NotificationService.instance.requestPermission();
+              },
             ),
             const Divider(),
             const _BudgetSection(),

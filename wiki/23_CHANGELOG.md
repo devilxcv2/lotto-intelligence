@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.7 — 2026-10-23
+
+Serata di estrazione più chiara.
+
+- Popup in app quando sta per estrarre (18:30–19:30) e dopo la chiusura se lo ZIP non c’è ancora.
+- Notifica alle 19:00 (imminente) e alle 20:15 (scarico archivio); poi quando la nuova estrazione è in archivio.
+- Timeline esplicita: 19:30 chiusura · risultati tipici verso 20:30 (non subito) · ZIP dalle 20:15 con riprove fino alle 23.
+- Aggiornamento serale automatico acceso di default.
+
 ## 0.5.6 — 2026-10-22
 
 Più semplice da usare.

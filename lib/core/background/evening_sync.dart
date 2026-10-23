@@ -18,18 +18,20 @@ import '../lotto/freshness.dart';
 import '../notifications/notification_service.dart';
 import '../settings/settings_repository.dart';
 
-/// Aggiornamento serale a app chiusa.
+/// Aggiornamento serale a app chiusa e promemoria pre-estrazione.
 ///
-/// Nei giorni di estrazione WorkManager esegue un task alle 20:15 locali;
-/// se l'archivio pubblicato non contiene ancora la data attesa, riprova ogni
-/// 20 minuti fino alle 23:00. Android può posticipare i task in Doze: l'ora
-/// è indicativa, come documentato in wiki/08.
+/// Nei giorni di estrazione:
+/// - alle 19:00 notifica «estrazione imminente» (risultati non subito online);
+/// - dalle 20:15 WorkManager scarica lo ZIP; se manca la data attesa riprova
+///   ogni 20 minuti fino alle 23:00. Android può posticipare i task in Doze.
 class EveningSync {
   EveningSync._();
 
   static const taskName = 'lotto.eveningSync';
+  static const preDrawTaskName = 'lotto.preDrawReminder';
   static const uniqueName = 'lotto-evening-sync';
   static const retryUniqueName = 'lotto-evening-sync-retry';
+  static const preDrawUniqueName = 'lotto-pre-draw-reminder';
   static const retryEvery = Duration(minutes: 20);
   static const lastRetryHour = 23;
 
@@ -40,9 +42,7 @@ class EveningSync {
     await Workmanager().initialize(eveningSyncDispatcher);
   }
 
-  /// Programma il prossimo controllo. Idempotente: sostituisce il precedente.
-  /// [after] permette di saltare il controllo di oggi quando è appena stato
-  /// eseguito: il ritardo resta calcolato dall'istante reale.
+  /// Programma controllo ZIP (20:15) e promemoria pre-estrazione (19:00).
   static Future<void> schedule({DateTime? now, DateTime? after}) async {
     if (!supported) return;
     final clock = now ?? DateTime.now();
@@ -57,30 +57,56 @@ class EveningSync {
       backoffPolicyDelay: const Duration(minutes: 10),
       inputData: const {'attempt': 0},
     );
+    await schedulePreDraw(now: clock);
+  }
+
+  static Future<void> schedulePreDraw({DateTime? now}) async {
+    if (!supported) return;
+    final clock = now ?? DateTime.now();
+    final target = nextPreDrawTime(clock);
+    await Workmanager().registerOneOffTask(
+      preDrawUniqueName,
+      preDrawTaskName,
+      initialDelay: target.difference(clock),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+      inputData: const {},
+    );
   }
 
   static Future<void> cancel() async {
     if (!supported) return;
     await Workmanager().cancelByUniqueName(uniqueName);
     await Workmanager().cancelByUniqueName(retryUniqueName);
+    await Workmanager().cancelByUniqueName(preDrawUniqueName);
   }
 
-  /// Prossimo istante locale di controllo: le 20:15 di oggi se è un giorno
-  /// di estrazione e non sono ancora passate, altrimenti del prossimo.
+  /// Prossimo istante locale di controllo ZIP: 20:15 del giorno di estrazione.
   static DateTime nextCheckTime(DateTime now) {
     var day = DateTime(now.year, now.month, now.day);
     if (isDrawWeekday(day)) {
-      final today = DateTime(day.year, day.month, day.day, 20, 15);
+      final today = DateTime(day.year, day.month, day.day, archiveCheckHour, archiveCheckMinute);
       if (today.isAfter(now)) return today;
     }
     do {
       day = day.add(const Duration(days: 1));
     } while (!isDrawWeekday(day));
-    return DateTime(day.year, day.month, day.day, 20, 15);
+    return DateTime(day.year, day.month, day.day, archiveCheckHour, archiveCheckMinute);
   }
 
-  /// Corpo del task. Separato dal dispatcher per poterlo testare con un
-  /// database in memoria e un Dio finto.
+  /// Prossimo promemoria alle 19:00 di un giorno di estrazione.
+  static DateTime nextPreDrawTime(DateTime now) {
+    var day = DateTime(now.year, now.month, now.day);
+    if (isDrawWeekday(day)) {
+      final today = DateTime(day.year, day.month, day.day, preDrawReminderHour, preDrawReminderMinute);
+      if (today.isAfter(now)) return today;
+    }
+    do {
+      day = day.add(const Duration(days: 1));
+    } while (!isDrawWeekday(day));
+    return DateTime(day.year, day.month, day.day, preDrawReminderHour, preDrawReminderMinute);
+  }
+
+  /// Corpo del task ZIP. Separato dal dispatcher per i test.
   static Future<EveningSyncResult> runOnce({
     required AppDatabase db,
     required Dio dio,
@@ -92,6 +118,10 @@ class EveningSync {
     final repository = DrawRepository(db);
     final wallet = WalletRepository(db);
     final before = await repository.summary(now: now);
+    if (settings.notificationsEnabled) {
+      final expected = isDrawWeekday(now) ? DateTime(now.year, now.month, now.day) : expectedPublishedDrawDate(now);
+      await notifications?.showArchiveCheckStarted(drawDate: expected);
+    }
     final service = ArchiveSyncService(repository: repository, wallet: wallet, dio: dio);
     final outcome = await service.syncOfficial();
     final after = await repository.summary(now: now);
@@ -126,6 +156,17 @@ class EveningSync {
     }
     final stillWaiting = after.freshness == SourceFreshness.delayed && now.hour < lastRetryHour;
     return stillWaiting ? const EveningSyncResult.retryLater() : const EveningSyncResult.skipped('Nessuna nuova estrazione.');
+  }
+
+  static Future<void> runPreDrawReminder({
+    required AppDatabase db,
+    required DateTime now,
+    required NotificationService? notifications,
+  }) async {
+    final settings = await SettingsRepository(db).load();
+    if (!settings.notificationsEnabled) return;
+    if (!isDrawWeekday(now)) return;
+    await notifications?.showPreDrawReminder(drawDate: DateTime(now.year, now.month, now.day));
   }
 
   static Future<void> _scheduleRetry(int attempt) async {
@@ -165,11 +206,20 @@ class EveningSyncResult {
 void eveningSyncDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
-    if (task != EveningSync.taskName) return true;
-    final attempt = (inputData?['attempt'] as int?) ?? 0;
     final db = await AppDatabase.openDefault();
     try {
       final now = DateTime.now();
+      if (task == EveningSync.preDrawTaskName) {
+        await EveningSync.runPreDrawReminder(
+          db: db,
+          now: now,
+          notifications: NotificationService.instance,
+        );
+        await EveningSync.schedulePreDraw(now: DateTime(now.year, now.month, now.day, 23, 59));
+        return true;
+      }
+      if (task != EveningSync.taskName) return true;
+      final attempt = (inputData?['attempt'] as int?) ?? 0;
       final result = await EveningSync.runOnce(
         db: db,
         dio: Dio(BaseOptions(connectTimeout: const Duration(seconds: 20), receiveTimeout: const Duration(seconds: 90))),
@@ -179,11 +229,9 @@ void eveningSyncDispatcher() {
       if (result.retry && attempt < 8) {
         await EveningSync._scheduleRetry(attempt + 1);
       }
-      // Il prossimo giorno di estrazione va comunque riprogrammato.
       await EveningSync.schedule(now: now, after: DateTime(now.year, now.month, now.day, 23, 59));
       return true;
     } catch (_) {
-      // WorkManager riproverà con il backoff configurato.
       return false;
     } finally {
       await db.close();

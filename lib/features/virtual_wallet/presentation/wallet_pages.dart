@@ -796,7 +796,12 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Concorso del ${formatItalianDate(target)} · raccolta chiusa alle 19:30.'),
+                Text(
+                  'Concorso del ${formatItalianDate(target)} · raccolta chiusa alle '
+                  '$salesCloseHour:${salesCloseMinute.toString().padLeft(2, '0')}. '
+                  'Risultati tipici verso le $typicalResultsHour:${typicalResultsMinute.toString().padLeft(2, '0')}; '
+                  'l\'app scarica lo ZIP dalle $archiveCheckHour:${archiveCheckMinute.toString().padLeft(2, '0')}.',
+                ),
                 const SizedBox(height: 6),
                 Text('$wheelName · ${sortedNumbers.isEmpty ? 'nessun numero' : sortedNumbers.join(' · ')} · posta ${formatEuro(draft.stakeCents)}'),
                 const SizedBox(height: 8),
@@ -1325,11 +1330,18 @@ class _WaitingCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (check != null)
-            Text('Il controllo automatico è previsto il ${formatItalianDate(target!)} dalle ${check.hour}:${check.minute.toString().padLeft(2, '0')}, se l\'aggiornamento serale è attivo.'),
+          Text(drawEveningTimeline, style: Theme.of(context).textTheme.bodySmall),
+          if (check != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Prossimo controllo automatico: ${formatItalianDate(target!)} alle '
+              '${check.hour}:${check.minute.toString().padLeft(2, '0')}'
+              '${settings?.liveSyncEnabled == true ? ' (attivo).' : ' — ora spento in Impostazioni.'}',
+            ),
+          ],
           if (settings != null && !settings.liveSyncEnabled) ...[
             const SizedBox(height: 8),
-            const Text('L\'aggiornamento serale è spento: l\'esito arriva solo quando aggiorni l\'archivio a mano.'),
+            const Text('Senza aggiornamento serale l\'esito arriva solo se aggiorni l\'archivio a mano.'),
             TextButton(onPressed: () => context.push('/more/settings'), child: const Text('Apri impostazioni')),
           ],
           const SizedBox(height: 8),

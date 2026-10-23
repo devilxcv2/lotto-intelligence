@@ -63,7 +63,7 @@ class AppSettings {
     onboardingCompleted: false,
     themeMode: ThemeMode.light,
     selectedWheelCode: 'BA',
-    liveSyncEnabled: false,
+    liveSyncEnabled: true,
     notificationsEnabled: true,
     budgetMode: BudgetMode.limits,
     virtualCapitalCents: 10000,

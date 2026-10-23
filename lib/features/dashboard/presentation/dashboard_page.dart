@@ -165,7 +165,9 @@ class _StudyCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Prossimo concorso: ${formatItalianDate(next)}. '
-              '${(settings?.liveSyncEnabled ?? false) ? 'Controllo automatico dalle ${check.hour}:${check.minute.toString().padLeft(2, '0')} del ${formatItalianDate(check)}.' : 'Aggiornamento serale spento: attivalo nelle impostazioni per il controllo automatico.'}'),
+              'Raccolta fino alle $salesCloseHour:${salesCloseMinute.toString().padLeft(2, '0')}; '
+              'risultati tipici verso le $typicalResultsHour:${typicalResultsMinute.toString().padLeft(2, '0')} (non subito). '
+              '${(settings?.liveSyncEnabled ?? true) ? 'ZIP automatico dalle ${check.hour}:${check.minute.toString().padLeft(2, '0')} del ${formatItalianDate(check)}.' : 'Aggiornamento serale spento: attivalo in Impostazioni.'}'),
           const SizedBox(height: 6),
           if (summary != null)
             Text('${summary.openCount} schedine in attesa (${formatEuro(summary.openStakeCents)}), ${summary.evaluatedCount} valutate, '

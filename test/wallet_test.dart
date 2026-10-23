@@ -106,6 +106,14 @@ void main() {
       expect(EveningSync.nextCheckTime(DateTime(2026, 10, 10, 21)), DateTime(2026, 10, 13, 20, 15));
       expect(EveningSync.nextCheckTime(DateTime(2026, 10, 11, 8)), DateTime(2026, 10, 13, 20, 15));
     });
+
+    test('il promemoria pre-estrazione cade alle 19:00 del giorno di estrazione', () {
+      expect(EveningSync.nextPreDrawTime(DateTime(2026, 10, 10, 10)), DateTime(2026, 10, 10, 19));
+      expect(EveningSync.nextPreDrawTime(DateTime(2026, 10, 10, 19, 1)), DateTime(2026, 10, 13, 19));
+      expect(drawEveningPhase(DateTime(2026, 10, 10, 19, 0)), DrawEveningPhase.closingSoon);
+      expect(drawEveningPhase(DateTime(2026, 10, 10, 20, 0)), DrawEveningPhase.waitingResults);
+      expect(drawEveningPhase(DateTime(2026, 10, 10, 12)), DrawEveningPhase.none);
+    });
   });
 
   group('schedine ipotetiche', () {
@@ -247,6 +255,7 @@ void main() {
     test('non fa nulla se l\'aggiornamento serale è spento', () async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
+      await SettingsRepository(db).save(AppSettings.initial.copyWith(liveSyncEnabled: false));
       final result = await EveningSync.runOnce(db: db, dio: Dio(), now: DateTime(2026, 10, 10, 20, 15), notifications: null);
       expect(result.reason, contains('disattivato'));
     });

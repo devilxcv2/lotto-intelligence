@@ -44,7 +44,8 @@ class SettingsRepository {
       onboardingCompleted: values[onboardingKey] == 'true',
       themeMode: _theme(values[themeKey]),
       selectedWheelCode: values[wheelKey] ?? AppSettings.initial.selectedWheelCode,
-      liveSyncEnabled: values[liveSyncKey] == 'true',
+      // Di default acceso: se la chiave non c'è ancora, scarica lo ZIP da sola.
+      liveSyncEnabled: values[liveSyncKey] != 'false',
       notificationsEnabled: values[notificationsKey] != 'false',
       budgetMode: _budgetMode(values[budgetModeKey]),
       virtualCapitalCents: int.tryParse(values[capitalKey] ?? '') ?? AppSettings.initial.virtualCapitalCents,

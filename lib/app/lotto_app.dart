@@ -55,7 +55,7 @@ class LiveSyncHost extends ConsumerStatefulWidget {
 
 class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBindingObserver {
   Timer? _timer;
-  bool? _scheduledFor;
+  (bool, bool)? _applied;
 
   @override
   void initState() {
@@ -82,7 +82,6 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    // Il task serale può aver scritto sul database mentre l'app era in pausa.
     ref.invalidate(archiveSummaryProvider);
     ref.invalidate(wheelDrawsProvider);
     unawaited(_evaluateTickets());
@@ -97,24 +96,29 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
     }
   }
 
-  void _syncTimer(bool enabled) {
-    if (_scheduledFor != enabled) {
-      _scheduledFor = enabled;
-      unawaited(enabled ? EveningSync.schedule() : EveningSync.cancel());
+  void _applySchedule({required bool liveSync, required bool notifications}) {
+    final next = (liveSync, notifications);
+    if (_applied == next) return;
+    _applied = next;
+    if (notifications || liveSync) {
+      unawaited(NotificationService.instance.requestPermission());
     }
-    if (!enabled) {
-      _timer?.cancel();
-      _timer = null;
+    if (liveSync) {
+      unawaited(EveningSync.schedule());
+      _timer ??= Timer.periodic(const Duration(minutes: 15), (_) => _tick());
       return;
     }
-    _timer ??= Timer.periodic(const Duration(minutes: 15), (_) => _tick());
+    unawaited(EveningSync.cancel());
+    if (notifications) unawaited(EveningSync.schedulePreDraw());
+    _timer?.cancel();
+    _timer = null;
   }
 
   Future<void> _tick() async {
     final settings = ref.read(settingsControllerProvider).value;
     if (settings == null || !settings.liveSyncEnabled) return;
     final now = DateTime.now();
-    if (!isDrawWeekday(now) || now.hour < 20 || now.hour > 23) return;
+    if (!isDrawWeekday(now) || now.hour < archiveCheckHour || now.hour > 23) return;
     if (ref.read(archiveSyncProvider).running) return;
     final summary = await ref.read(drawRepositoryProvider).summary(now: now);
     if (summary.freshness == SourceFreshness.delayed || summary.freshness == SourceFreshness.unverified) {
@@ -128,7 +132,9 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsControllerProvider).value;
-    if (settings != null) _syncTimer(settings.liveSyncEnabled);
+    if (settings != null) {
+      _applySchedule(liveSync: settings.liveSyncEnabled, notifications: settings.notificationsEnabled);
+    }
     return widget.child;
   }
 }

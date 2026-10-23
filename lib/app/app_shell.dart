@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/updates/update_prompt.dart';
 import '../features/draws/data/archive_sync.dart';
+import 'draw_evening_prompt.dart';
 import 'result_notice.dart';
 
 class AppShell extends StatelessWidget {
@@ -59,7 +60,7 @@ class AppShell extends StatelessWidget {
               ],
             ),
           );
-    return UpdatePrompt(child: page);
+    return UpdatePrompt(child: DrawEveningPrompt(child: page));
   }
 }
 
