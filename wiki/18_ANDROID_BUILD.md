@@ -2,6 +2,16 @@
 
 Identificativo: `it.lottointelligence.lotto_intelligence`. Nome visibile: Lotto Intelligence. Minimo SDK: quello predefinito di Flutter 3.41. Java 17.
 
+Dal 0.5.9 la release in `android/app/build.gradle.kts` è solo `arm64-v8a`, con `minifyEnabled` e `shrinkResources`, più `proguard-rules.pro`. Per sideload sui telefoni reali:
+
+```bash
+GRADLE_USER_HOME="/media/eriko/dati/gradle-user-home" \
+TMPDIR="/media/eriko/dati/tmp-build" \
+flutter build apk --release
+```
+
+L’APK esce in `build/app/outputs/flutter-apk/app-release.apk`. In debug, se serve un solo ABI:
+
 Debug arm64, comando usato il 2026-10-09:
 
 ```bash

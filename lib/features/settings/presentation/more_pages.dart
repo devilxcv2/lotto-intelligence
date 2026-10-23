@@ -28,38 +28,58 @@ class MoreHubPage extends StatelessWidget {
       title: 'Altro',
       child: ListView(
         children: [
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Impostazioni'),
-            subtitle: const Text('Tema, sync, budget simulato, aggiornamenti'),
-            onTap: () => context.push('/more/settings'),
+          HubSection(
+            title: 'Account e studio',
+            children: [
+              HubTile(
+                icon: Icons.settings_outlined,
+                title: 'Impostazioni',
+                subtitle: 'Tema, sync, budget, aggiornamenti',
+                onTap: () => context.push('/more/settings'),
+              ),
+              HubTile(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Portafoglio virtuale',
+                subtitle: 'Saldo simulato e limiti',
+                onTap: () => context.push('/more/wallet'),
+              ),
+              HubTile(
+                icon: Icons.insights_outlined,
+                title: 'Statistiche',
+                subtitle: 'Frequenze, ritardi, heatmap',
+                onTap: () => context.push('/more/statistics'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet_outlined),
-            title: const Text('Portafoglio virtuale'),
-            subtitle: const Text('Saldo simulato e limiti di spesa'),
-            onTap: () => context.push('/more/wallet'),
+          HubSection(
+            title: 'Altri giochi',
+            subtitle: 'Le schedine Lotto stanno nella scheda Schedine.',
+            children: [
+              HubTile(
+                icon: Icons.stars_outlined,
+                title: 'Studio SuperEnalotto',
+                subtitle: 'Ritardi, suggerimenti e categorie',
+                onTap: () => context.push('/more/se-studio'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.receipt_long_outlined),
-            title: const Text('Schedine Lotto'),
-            subtitle: const Text('Anche dalla scheda Schedine in basso'),
-            onTap: () => context.push('/tickets'),
+          HubSection(
+            title: 'Documentazione',
+            children: [
+              HubTile(
+                icon: Icons.menu_book_outlined,
+                title: 'Wiki',
+                subtitle: 'Visione, fonti, probabilità, build',
+                onTap: () => context.push('/more/wiki'),
+              ),
+              HubTile(
+                icon: Icons.health_and_safety_outlined,
+                title: 'Diagnostica fonti',
+                subtitle: 'Archivio, buchi e stato sync',
+                onTap: () => context.push('/more/diagnostics'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.stars_outlined),
-            title: const Text('Studio SuperEnalotto'),
-            subtitle: const Text('Ritardi, suggerimenti e categorie di premio'),
-            onTap: () => context.push('/more/se-studio'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.insights_outlined),
-            title: const Text('Statistiche'),
-            subtitle: const Text('Frequenze, ritardi, heatmap'),
-            onTap: () => context.push('/more/statistics'),
-          ),
-          ListTile(leading: const Icon(Icons.menu_book_outlined), title: const Text('Wiki'), onTap: () => context.push('/more/wiki')),
-          ListTile(leading: const Icon(Icons.health_and_safety_outlined), title: const Text('Diagnostica fonti'), onTap: () => context.push('/more/diagnostics')),
         ],
       ),
     );
@@ -477,31 +497,10 @@ class WikiArticlePage extends StatelessWidget {
 const wikiPages = <(String, String)>[
   ('00_INDEX.md', 'Indice'),
   ('01_VISION.md', 'Visione'),
-  ('02_REQUIREMENTS.md', 'Requisiti'),
-  ('03_ARCHITECTURE.md', 'Architettura'),
-  ('04_TECH_STACK.md', 'Stack'),
-  ('05_UI_UX_DESIGN.md', 'Interfaccia'),
   ('06_DATA_SOURCES.md', 'Fonti'),
-  ('07_DATABASE_SCHEMA.md', 'Database'),
-  ('08_DRAW_SYNC_ENGINE.md', 'Sincronizzazione'),
-  ('09_STATISTICS_ENGINE.md', 'Statistiche'),
   ('10_PROBABILITY_THEORY.md', 'Probabilità'),
-  ('11_SYSTEM_BUILDER.md', 'Sistemi'),
-  ('12_AI_ARCHITECTURE.md', 'Architettura AI'),
-  ('13_LOCAL_AI.md', 'AI locale'),
-  ('14_REMOTE_AI.md', 'AI remota'),
-  ('15_BACKTESTING.md', 'Backtesting'),
-  ('16_MONTE_CARLO.md', 'Monte Carlo'),
-  ('17_STRATEGY_EVALUATION.md', 'Valutazione'),
   ('18_ANDROID_BUILD.md', 'Build Android'),
-  ('19_TESTING.md', 'Test'),
-  ('20_SECURITY.md', 'Sicurezza'),
-  ('21_TROUBLESHOOTING.md', 'Problemi'),
-  ('22_ROADMAP.md', 'Roadmap'),
   ('23_CHANGELOG.md', 'Changelog'),
-  ('24_DEVELOPMENT_GUIDE.md', 'Sviluppo'),
-  ('25_AGENT_GUIDE.md', 'Guida agenti'),
-  ('26_API_REFERENCE.md', 'Riferimento'),
   ('27_KNOWN_LIMITATIONS.md', 'Limiti'),
   ('28_PRIZES_AND_ALERTS.md', 'Premi e avvisi'),
 ];

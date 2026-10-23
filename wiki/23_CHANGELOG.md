@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.9 — 2026-10-23
+
+APK più leggero e menu meno dispersivi.
+
+- Release arm64-only con minify e shrink resources; rimossi `cupertino_icons` e `url_launcher`; in app solo le voci wiki davvero usate.
+- Home: azioni essenziali (nuova schedina, elenco, Zoppe) e un solo ingresso al Lab; Lab e Altro raggruppati per sezioni con icone.
+- Splash e tema leggermente più nitidi (fondo, navigation bar, tile).
+
 ## 0.5.8 — 2026-10-23
 
 Schedine che si arrangiano da sole.

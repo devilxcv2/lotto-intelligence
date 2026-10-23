@@ -54,7 +54,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF0E1624) : Colors.white,
+      scaffoldBackgroundColor: dark ? const Color(0xFF0E1624) : const Color(0xFFF7F9FC),
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.primary,
@@ -63,6 +63,12 @@ class AppTheme {
         centerTitle: true,
         titleTextStyle: title,
         iconTheme: IconThemeData(color: scheme.primary),
+      ),
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        iconColor: scheme.primary,
+        titleTextStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: scheme.onSurface),
+        subtitleTextStyle: TextStyle(fontSize: 13, height: 1.25, color: scheme.onSurface.withValues(alpha: 0.65)),
       ),
       cardTheme: CardThemeData(
         color: scheme.surface,
@@ -73,14 +79,21 @@ class AppTheme {
       dividerColor: dark ? const Color(0xFF2A3A52) : AppColors.line,
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
-        indicatorColor: scheme.primary.withValues(alpha: 0.16),
+        elevation: 2,
+        shadowColor: const Color(0x14000000),
+        indicatorColor: scheme.primary.withValues(alpha: 0.14),
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return IconThemeData(color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.55));
+          return IconThemeData(color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.5), size: 24);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.6));
+          return TextStyle(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.55),
+          );
         }),
       ),
       navigationRailTheme: NavigationRailThemeData(
@@ -89,11 +102,20 @@ class AppTheme {
         selectedIconTheme: IconThemeData(color: scheme.primary),
         unselectedIconTheme: IconThemeData(color: scheme.onSurface.withValues(alpha: 0.55)),
       ),
-      filledButtonTheme: const FilledButtonThemeData(
+      filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(AppColors.banner),
-          foregroundColor: WidgetStatePropertyAll(Colors.white),
-          minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+          backgroundColor: const WidgetStatePropertyAll(AppColors.banner),
+          foregroundColor: const WidgetStatePropertyAll(Colors.white),
+          minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: WidgetStatePropertyAll(scheme.primary),
+          side: WidgetStatePropertyAll(BorderSide(color: scheme.primary.withValues(alpha: 0.35))),
+          minimumSize: const WidgetStatePropertyAll(Size(48, 44)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -105,6 +127,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         side: BorderSide(color: dark ? const Color(0xFF2A3A52) : AppColors.line),
         labelStyle: TextStyle(color: scheme.onSurface),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.banner),
     );

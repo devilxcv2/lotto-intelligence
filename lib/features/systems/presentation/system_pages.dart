@@ -39,25 +39,73 @@ class LabHubPage extends StatelessWidget {
       title: 'Laboratorio',
       child: ListView(
         children: [
-          _link(context, '/lab/systems', 'System builder', 'Integrali, ridotti verificati, casuali, filtri'),
-          _link(context, '/lab/strategies', 'Strategie salvate', 'Configurazioni conservate in locale'),
-          _link(context, '/lab/ai', 'AI Lab', 'Baseline, pesi descrittivi, filtri, modelli opzionali'),
-          _link(context, '/lab/models', 'Modelli AI', 'Endpoint, timeout, prova di connessione'),
-          _link(context, '/lab/discovery', 'Ricerca trend', 'Settimane, probabilità e sistemone di studio'),
-          _link(context, '/lab/zoppe', 'Sistemone Zoppe', 'Suggerimenti a cinque gambe · anche da Nuova schedina'),
-          _link(context, '/lab/backtest', 'Backtesting', 'Walk-forward senza dati futuri'),
-          _link(context, '/lab/reports', 'Report', 'Simulazioni salvate ed esportabili'),
+          HubSection(
+            title: 'Giocate di studio',
+            subtitle: 'Parti da qui per combinazioni e suggerimenti.',
+            children: [
+              HubTile(
+                icon: Icons.hub_outlined,
+                title: 'Sistemone Zoppe',
+                subtitle: 'Cinque gambe · anche da Nuova schedina',
+                onTap: () => context.push('/lab/zoppe'),
+              ),
+              HubTile(
+                icon: Icons.grid_view_outlined,
+                title: 'System builder',
+                subtitle: 'Integrali, ridotti, casuali e filtri',
+                onTap: () => context.push('/lab/systems'),
+              ),
+              HubTile(
+                icon: Icons.bookmark_outline,
+                title: 'Strategie salvate',
+                subtitle: 'Configurazioni in locale',
+                onTap: () => context.push('/lab/strategies'),
+              ),
+            ],
+          ),
+          HubSection(
+            title: 'Analisi',
+            children: [
+              HubTile(
+                icon: Icons.timeline_outlined,
+                title: 'Ricerca trend',
+                subtitle: 'Settimane, probabilità e sistemone',
+                onTap: () => context.push('/lab/discovery'),
+              ),
+              HubTile(
+                icon: Icons.science_outlined,
+                title: 'Backtesting',
+                subtitle: 'Walk-forward senza dati futuri',
+                onTap: () => context.push('/lab/backtest'),
+              ),
+              HubTile(
+                icon: Icons.description_outlined,
+                title: 'Report',
+                subtitle: 'Simulazioni salvate',
+                onTap: () => context.push('/lab/reports'),
+              ),
+            ],
+          ),
+          HubSection(
+            title: 'AI locale',
+            subtitle: 'Opzionale: nessun server obbligatorio.',
+            children: [
+              HubTile(
+                icon: Icons.psychology_outlined,
+                title: 'AI Lab',
+                subtitle: 'Baseline, pesi e filtri',
+                onTap: () => context.push('/lab/ai'),
+              ),
+              HubTile(
+                icon: Icons.dns_outlined,
+                title: 'Modelli AI',
+                subtitle: 'Endpoint e prova di connessione',
+                onTap: () => context.push('/lab/models'),
+              ),
+            ],
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _link(BuildContext context, String path, String title, String subtitle) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => context.push(path),
     );
   }
 }

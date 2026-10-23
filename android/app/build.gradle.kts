@@ -23,19 +23,26 @@ android {
 
     defaultConfig {
         applicationId = "it.lottointelligence.lotto_intelligence"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Un solo ABI: APK più leggeri per i telefoni reali (sideload).
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
     buildTypes {
         release {
-            // La release usa ancora la chiave di debug.
-            // Il keystore di pubblicazione è descritto in wiki/18_ANDROID_BUILD.md.
+            // Chiave di debug finché non c'è un keystore di pubblicazione (wiki/18).
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.8",
-  "versionCode": 16,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.8/app-debug.apk",
-  "notes": "Catalogo schedine per concorso, popup sempre sugli esiti, schedine automatiche di studio con notifiche.",
+  "versionName": "0.5.9",
+  "versionCode": 17,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.9/app-release.apk",
+  "notes": "APK più leggero (arm64 + minify) e menu Home/Lab/Altro meno dispersivi.",
   "releases": [
+    {
+      "versionName": "0.5.9",
+      "versionCode": 17,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.9/app-release.apk",
+      "notes": "APK più leggero e menu più ordinati."
+    },
     {
       "versionName": "0.5.8",
       "versionCode": 16,

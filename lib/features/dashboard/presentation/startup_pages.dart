@@ -40,19 +40,53 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     settings.whenData((value) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _open(value.onboardingCompleted));
     });
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.blur_circular, size: 72, color: AppColors.navy),
-            SizedBox(height: 16),
-            Text('Lotto Intelligence AI', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-            SizedBox(height: 8),
-            Text('Archivio, statistiche, sistemi'),
-            SizedBox(height: 24),
-            CircularProgressIndicator(),
-          ],
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFE8F0FA), Colors.white, Color(0xFFFFF6E8)],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: AppColors.navy,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x331B4E8C), blurRadius: 18, offset: Offset(0, 8)),
+                  ],
+                ),
+                child: const Icon(Icons.casino_outlined, size: 44, color: AppColors.ballText),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Lotto Intelligence',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppColors.navy,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'serif',
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Archivio · studio · simulazioni',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.numberBlue),
+              ),
+              const SizedBox(height: 28),
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            ],
+          ),
         ),
       ),
     );

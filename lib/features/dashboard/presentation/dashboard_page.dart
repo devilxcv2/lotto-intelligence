@@ -15,7 +15,6 @@ import '../../../features/virtual_wallet/presentation/wallet_pages.dart';
 import '../../../features/backtesting/data/backtest_repository.dart';
 import '../../../features/draws/data/archive_sync.dart';
 import '../../../features/draws/data/draw_repository.dart';
-import '../../../features/draws/presentation/draws_pages.dart';
 import '../../../features/statistics/data/statistics_providers.dart';
 import '../../../features/statistics/domain/statistics_engine.dart';
 import '../../../features/systems/data/strategy_repository.dart';
@@ -55,23 +54,25 @@ class DashboardPage extends ConsumerWidget {
             data: (items) => _WheelPreview(wheel: wheel, draws: items),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _LinkTile(label: 'Laboratorio sistemi', detail: 'Combinazioni e filtri', onTap: () => context.go('/lab/systems')),
-              _LinkTile(label: 'AI Lab', detail: 'Motori locali e provider opzionali', onTap: () => context.go('/lab/ai')),
-              _LinkTile(
-                label: 'Strategie salvate',
-                detail: '${strategies.value?.length ?? 0}',
-                onTap: () => context.go('/lab/strategies'),
-              ),
-              _LinkTile(
-                label: 'Simulazioni',
-                detail: '${backtests.value?.length ?? 0} report',
-                onTap: () => context.go('/lab/reports'),
-              ),
-            ],
+          SectionCard(
+            title: 'Laboratorio',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  strategies.hasValue || backtests.hasValue
+                      ? '${strategies.value?.length ?? 0} strategie · ${backtests.value?.length ?? 0} report. '
+                          'Apri Lab in basso per sistemi, Zoppe e AI.'
+                      : 'Sistemi, Zoppe, backtest e AI: tutto nella scheda Lab.',
+                ),
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.go('/lab'),
+                  icon: const Icon(Icons.science_outlined),
+                  label: const Text('Apri laboratorio'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -188,38 +189,20 @@ class _StudyCard extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
+              FilledButton.icon(
+                onPressed: () => context.push(newTicketRoute(wheel: settings?.selectedWheelCode)),
+                icon: const Icon(Icons.add),
+                label: const Text('Nuova schedina'),
+              ),
               FilledButton.tonalIcon(
                 onPressed: () => context.go('/tickets'),
                 icon: const Icon(Icons.receipt_long_outlined),
                 label: const Text('Schedine'),
               ),
               OutlinedButton.icon(
-                onPressed: () => context.push(newTicketRoute(wheel: settings?.selectedWheelCode)),
-                icon: const Icon(Icons.add),
-                label: const Text('Nuova schedina'),
-              ),
-              OutlinedButton.icon(
                 onPressed: () => context.push('/lab/zoppe'),
                 icon: const Icon(Icons.hub_outlined),
-                label: const Text('Sistemone Zoppe'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/more/wallet'),
-                icon: const Icon(Icons.account_balance_wallet_outlined),
-                label: const Text('Portafoglio'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/more/statistics'),
-                icon: const Icon(Icons.insights_outlined),
-                label: const Text('Statistiche'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(drawsGameProvider.notifier).state = 1;
-                  context.go('/draws');
-                },
-                icon: const Icon(Icons.stars_outlined),
-                label: const Text('SuperEnalotto'),
+                label: const Text('Zoppe'),
               ),
             ],
           ),
@@ -279,34 +262,3 @@ class _WheelPreview extends ConsumerWidget {
   }
 }
 
-class _LinkTile extends StatelessWidget {
-  const _LinkTile({required this.label, required this.detail, required this.onTap});
-
-  final String label;
-  final String detail;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      child: Card(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(detail),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

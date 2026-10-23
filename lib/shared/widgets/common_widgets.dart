@@ -377,6 +377,61 @@ class PageScaffold extends StatelessWidget {
   }
 }
 
+/// Intestazione di sezione nei menu hub (Lab / Altro).
+class HubSection extends StatelessWidget {
+  const HubSection({required this.title, required this.children, this.subtitle, super.key});
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 8),
+        ResultsBanner(title),
+        if (subtitle != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ...children,
+      ],
+    );
+  }
+}
+
+class HubTile extends StatelessWidget {
+  const HubTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    super.key,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: AppColors.navy.withValues(alpha: 0.12),
+        child: Icon(icon, color: AppColors.navy, size: 22),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.numberBlue),
+      onTap: onTap,
+    );
+  }
+}
+
 class WindowPicker extends StatelessWidget {
   const WindowPicker({required this.value, required this.onChanged, super.key});
 

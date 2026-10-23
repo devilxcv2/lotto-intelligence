@@ -1,7 +1,7 @@
 name: lotto_intelligence
 description: Laboratorio di analisi del Lotto italiano. Statistiche descrittive, sistemi e backtest, senza pretese predittive.
 publish_to: 'none'
-version: 0.5.8+16
+version: 0.5.9+17
 
 environment:
   sdk: ^3.11.4
@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   go_router: ^17.5.0
   # Drift 2.35 richiede drift_dev con analyzer >=10, che a sua volta vuole
@@ -30,7 +29,6 @@ dependencies:
   workmanager: ^0.10.10
   flutter_local_notifications: ^22.3.1
   package_info_plus: ^10.2.2
-  url_launcher: ^6.3.2
   open_filex: ^4.7.0
 
 dev_dependencies:
@@ -47,4 +45,13 @@ flutter:
   assets:
     - assets/fonts/DejaVuSans.ttf
     - assets/fonts/DejaVu-copyright.txt
-    - wiki/
+    # Solo le voci wiki aperte dall'app (non tutta la cartella di sviluppo).
+    - wiki/00_INDEX.md
+    - wiki/01_VISION.md
+    - wiki/06_DATA_SOURCES.md
+    - wiki/10_PROBABILITY_THEORY.md
+    - wiki/18_ANDROID_BUILD.md
+    - wiki/23_CHANGELOG.md
+    - wiki/27_KNOWN_LIMITATIONS.md
+    - wiki/28_PRIZES_AND_ALERTS.md
+
