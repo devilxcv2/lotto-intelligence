@@ -9,6 +9,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/lotto/draw_validation.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/lotto/freshness.dart';
+import '../../../core/lotto/prize_table.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_controller.dart';
@@ -229,13 +230,11 @@ class SettingsPage extends ConsumerWidget {
               },
             ),
             SwitchListTile(
-              title: const Text('Schedine automatiche di studio'),
+              title: const Text('Schedine automatiche Lotto'),
               subtitle: Text(
                 value.autoStudyEnabled
-                    ? 'L\'app crea da sola una schedina (${value.autoStudyMethod.label}) sulla ruota ${value.selectedWheelCode} '
-                        'per ogni concorso, la valuta con lo ZIP e ti notifica. Puoi spegnerla quando vuoi.'
-                    : 'Se la attivi, l\'app prepara una giocata ipotetica per il prossimo concorso, '
-                        'controlla eventuali vincite simulate e te lo comunica con popup e notifica.',
+                    ? 'Crea ${value.autoStudyMethod.label} su ${value.selectedWheelCode} per ogni concorso, con le poste sotto.'
+                    : 'Prepara una giocata ipotetica per il prossimo concorso, la valuta con lo ZIP e ti notifica.',
               ),
               value: value.autoStudyEnabled,
               onChanged: (enabled) async {
@@ -245,13 +244,13 @@ class SettingsPage extends ConsumerWidget {
                 }
               },
             ),
-            if (value.autoStudyEnabled)
+            if (value.autoStudyEnabled) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Metodo automatico', style: Theme.of(context).textTheme.titleSmall),
+                    Text('Metodo Lotto', style: Theme.of(context).textTheme.titleSmall),
                     const SizedBox(height: 8),
                     SegmentedButton<AutoStudyMethod>(
                       segments: const [
@@ -267,14 +266,54 @@ class SettingsPage extends ConsumerWidget {
                             );
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    Text('Poste di default (ambo, terno, …)', style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 4),
                     Text(
-                      'Usa la ruota selezionata in Home (${value.selectedWheelCode}). Posta: 1 € sull\'ambo (o il costo unità in portafoglio).',
+                      'Solo le sorti con posta > 0 entrano nella schedina. Totale attuale: '
+                      '${formatEuro(autoStudyStakeTotal(value.autoStudyStakes))}.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    const SizedBox(height: 8),
+                    for (final sorte in LottoSorte.values)
+                      _AutoStakeRow(
+                        label: sorte.label,
+                        cents: value.autoStakeFor(sorte),
+                        onChanged: (cents) => ref.read(settingsControllerProvider.notifier).setAutoStake(sorte, cents),
+                      ),
+                    const SizedBox(height: 4),
+                    OutlinedButton.icon(
+                      onPressed: () => ref.read(settingsControllerProvider.notifier).applySuggestedAutoStakes(),
+                      icon: const Icon(Icons.lightbulb_outline),
+                      label: const Text('Applica poste suggerite (ambo + terno 1 €)'),
+                    ),
+                    if (autoStudyStakesProblem(value.autoStudyStakes) != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          autoStudyStakesProblem(value.autoStudyStakes)!,
+                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        ),
+                      ),
                   ],
                 ),
               ),
+            ],
+            SwitchListTile(
+              title: const Text('Schedine automatiche SuperEnalotto'),
+              subtitle: Text(
+                value.autoSeEnabled
+                    ? 'Per ogni concorso crea tre schedine (Zoppe, ritardi, frequenti) così confronti i trend. Esito = categoria, non euro.'
+                    : 'Attiva per registrare da sola le tre strategie SE e confrontarle nel catalogo.',
+              ),
+              value: value.autoSeEnabled,
+              onChanged: (enabled) async {
+                await ref.read(settingsControllerProvider.notifier).setAutoSe(enabled);
+                if (enabled && value.notificationsEnabled) {
+                  await NotificationService.instance.requestPermission();
+                }
+              },
+            ),
             const Divider(),
             const _BudgetSection(),
             const Divider(),
@@ -287,6 +326,38 @@ class SettingsPage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AutoStakeRow extends StatelessWidget {
+  const _AutoStakeRow({required this.label, required this.cents, required this.onChanged});
+
+  final String label;
+  final int cents;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+          IconButton(
+            onPressed: cents <= 0 ? null : () => onChanged(cents - stakeStepCents),
+            icon: const Icon(Icons.remove_circle_outline),
+          ),
+          SizedBox(
+            width: 72,
+            child: Text(formatEuro(cents), textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
+          IconButton(
+            onPressed: cents >= maxTicketStakeCents ? null : () => onChanged(cents + stakeStepCents),
+            icon: const Icon(Icons.add_circle_outline),
+          ),
+        ],
       ),
     );
   }

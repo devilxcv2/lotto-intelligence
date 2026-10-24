@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/database_provider.dart';
+import '../lotto/prize_table.dart';
 import '../../features/virtual_wallet/domain/auto_study.dart';
 import 'app_settings.dart';
 import 'settings_repository.dart';
@@ -32,6 +33,16 @@ class SettingsController extends AsyncNotifier<AppSettings> {
           autoStudyMethod: method,
         ));
   }
+
+  Future<void> setAutoSe(bool enabled) => _update((settings) => settings.copyWith(autoSeEnabled: enabled));
+
+  Future<void> setAutoStake(LottoSorte sorte, int cents) {
+    final stepped = (cents / stakeStepCents).round() * stakeStepCents;
+    final clamped = stepped.clamp(0, maxTicketStakeCents);
+    return _update((settings) => settings.withAutoStake(sorte, clamped));
+  }
+
+  Future<void> applySuggestedAutoStakes() => _update((settings) => settings.withSuggestedAutoStakes());
 
   Future<void> setBudgets({
     required int virtualCapitalCents,

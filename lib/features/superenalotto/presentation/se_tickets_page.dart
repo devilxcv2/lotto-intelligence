@@ -66,11 +66,13 @@ class _SeTicketsPageState extends ConsumerState<SeTicketsPage> {
               data: (items) {
                 final wins = items.where((t) => t.match?.isCategoryWin == true).length;
                 final none = items.where((t) => t.match != null && !t.match!.isCategoryWin).length;
+                final autos = items.where((t) => t.isAutoStudy).length;
                 final shown = switch (_filter) {
                   'open' => items.where((t) => t.isOpen).toList(),
                   'wins' => items.where((t) => t.match?.isCategoryWin == true).toList(),
                   'none' => items.where((t) => t.match != null && !t.match!.isCategoryWin).toList(),
                   'evaluated' => items.where((t) => !t.isOpen).toList(),
+                  'auto' => items.where((t) => t.isAutoStudy).toList(),
                   _ => items,
                 };
                 final catalog = _catalogByContest(shown);
@@ -94,6 +96,7 @@ class _SeTicketsPageState extends ConsumerState<SeTicketsPage> {
                               ('open', 'In attesa (${items.where((t) => t.isOpen).length})'),
                               ('wins', 'Categorie ($wins)'),
                               ('none', 'Nessuna ($none)'),
+                              ('auto', 'Auto ($autos)'),
                               ('evaluated', 'Valutate (${items.where((t) => !t.isOpen).length})'),
                             ])
                               Padding(
@@ -268,6 +271,7 @@ class _SeTicketCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 [
+                  if (ticket.isAutoStudy) 'Auto',
                   if (match != null) '${match.hits} numeri nei sei',
                   if (match?.jollyMatched == true) 'Jolly',
                   ticket.origin,

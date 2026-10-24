@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.14 — 2026-10-24
+
+Schedine mirate Lotto e algoritmi SE personalizzati.
+
+- Nuova schedina: modalità Ambo / Terno / Quaterna / Cinquina su una ruota, con suggerimenti della giusta lunghezza.
+- SuperEnalotto: algoritmi sull’archivio (mix, pari/dispari, somma, giorno, decadi, coppie) + trend delle Auto; puoi registrarle tutte insieme.
+- Include anche poste auto Lotto e auto SE a tre strategie (0.5.13).
+
+## 0.5.13 — 2026-10-24
+
+Poste auto configurabili e SuperEnalotto automatico.
+
+- In Impostazioni: poste di default per estratto/ambo/terno/quaterna/cinquina sulle schedine Lotto automatiche, con «Applica suggerite».
+- Opzione SuperEnalotto automatico: crea Zoppe + ritardi + frequenti per confrontare i trend (categorie, non euro).
+- Catalogo SE: filtro Auto.
+
 ## 0.5.12 — 2026-10-24
 
 Menu più giovane, disclaimer fuori dalla Home.

@@ -28,19 +28,21 @@ class UpdatePrompt extends ConsumerStatefulWidget {
 
 class _UpdatePromptState extends ConsumerState<UpdatePrompt> with WidgetsBindingObserver {
   DateTime? _lastAutoCheck;
+  Timer? _startupTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Ritardo breve: lascia partire splash/rete e non si sovrappone al popup serale.
-    Future<void>.delayed(const Duration(seconds: 2), () {
+    _startupTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) _autoCheck();
     });
   }
 
   @override
   void dispose() {
+    _startupTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

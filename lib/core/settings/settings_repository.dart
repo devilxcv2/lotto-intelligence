@@ -19,6 +19,12 @@ class SettingsRepository {
   static const budgetModeKey = 'budget_mode';
   static const autoStudyKey = 'auto_study_enabled';
   static const autoStudyMethodKey = 'auto_study_method';
+  static const autoSeKey = 'auto_se_enabled';
+  static const autoStakeEstrattoKey = 'auto_stake_estratto_cents';
+  static const autoStakeAmboKey = 'auto_stake_ambo_cents';
+  static const autoStakeTernoKey = 'auto_stake_terno_cents';
+  static const autoStakeQuaternaKey = 'auto_stake_quaterna_cents';
+  static const autoStakeCinquinaKey = 'auto_stake_cinquina_cents';
   static const capitalKey = 'virtual_capital_cents';
   static const contestBudgetKey = 'contest_budget_cents';
   static const monthlyBudgetKey = 'monthly_budget_cents';
@@ -53,6 +59,16 @@ class SettingsRepository {
       budgetMode: _budgetMode(values[budgetModeKey]),
       autoStudyEnabled: values[autoStudyKey] == 'true',
       autoStudyMethod: parseAutoStudyMethod(values[autoStudyMethodKey]) ?? AppSettings.initial.autoStudyMethod,
+      autoSeEnabled: values[autoSeKey] == 'true',
+      // Se non hai ancora salvato le poste auto, l'ambo eredita il costo unità (comportamento 0.5.x).
+      autoStakeEstrattoCents: int.tryParse(values[autoStakeEstrattoKey] ?? '') ?? AppSettings.initial.autoStakeEstrattoCents,
+      autoStakeAmboCents: int.tryParse(values[autoStakeAmboKey] ?? '') ??
+          int.tryParse(values[unitCostKey] ?? '') ??
+          AppSettings.initial.autoStakeAmboCents,
+      autoStakeTernoCents: int.tryParse(values[autoStakeTernoKey] ?? '') ??
+          (values.containsKey(autoStakeAmboKey) ? AppSettings.initial.autoStakeTernoCents : 0),
+      autoStakeQuaternaCents: int.tryParse(values[autoStakeQuaternaKey] ?? '') ?? 0,
+      autoStakeCinquinaCents: int.tryParse(values[autoStakeCinquinaKey] ?? '') ?? 0,
       virtualCapitalCents: int.tryParse(values[capitalKey] ?? '') ?? AppSettings.initial.virtualCapitalCents,
       contestBudgetCents: int.tryParse(values[contestBudgetKey] ?? '') ?? AppSettings.initial.contestBudgetCents,
       monthlyBudgetCents: int.tryParse(values[monthlyBudgetKey] ?? '') ?? AppSettings.initial.monthlyBudgetCents,
@@ -84,6 +100,12 @@ class SettingsRepository {
     await _write(budgetModeKey, settings.budgetMode.name);
     await _write(autoStudyKey, settings.autoStudyEnabled ? 'true' : 'false');
     await _write(autoStudyMethodKey, settings.autoStudyMethod.name);
+    await _write(autoSeKey, settings.autoSeEnabled ? 'true' : 'false');
+    await _write(autoStakeEstrattoKey, '${settings.autoStakeEstrattoCents}');
+    await _write(autoStakeAmboKey, '${settings.autoStakeAmboCents}');
+    await _write(autoStakeTernoKey, '${settings.autoStakeTernoCents}');
+    await _write(autoStakeQuaternaKey, '${settings.autoStakeQuaternaCents}');
+    await _write(autoStakeCinquinaKey, '${settings.autoStakeCinquinaCents}');
     await _write(capitalKey, '${settings.virtualCapitalCents}');
     await _write(contestBudgetKey, '${settings.contestBudgetCents}');
     await _write(monthlyBudgetKey, '${settings.monthlyBudgetCents}');

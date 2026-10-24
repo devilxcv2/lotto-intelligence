@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_provider.dart';
 import '../../../core/lotto/freshness.dart';
-import '../../../core/lotto/prize_table.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_repository.dart';
 import '../../draws/data/draw_repository.dart';
@@ -61,7 +60,11 @@ class AutoStudyService {
         'Archivio insufficiente su $wheel per comporre ${method.label}.',
       );
     }
-    final stakes = autoStudyStakes(amboCents: loaded.unitCostCents.clamp(stakeStepCents, 20000));
+    final stakes = loaded.autoStudyStakes;
+    final stakesError = autoStudyStakesProblem(stakes);
+    if (stakesError != null) {
+      return AutoStudyCreateResult.skipped(stakesError);
+    }
     final draft = TicketDraft(
       wheelCode: wheel,
       numbers: numbers,

@@ -112,6 +112,47 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
     });
   }
 
+  void _applySuggestion(SeSuggestion suggestion, {bool personal = false}) {
+    setState(() {
+      _systemMode = false;
+      _system = null;
+      _selected
+        ..clear()
+        ..addAll(suggestion.numbers);
+      _origin = personal ? 'Personalizzato · ${suggestion.name}' : (suggestion.name.contains('Zoppe') ? 'zoppe' : 'suggerimento');
+      _message = null;
+      if (suggestion.superstar != null) {
+        _superstar.text = '${suggestion.superstar}';
+      }
+    });
+  }
+
+  Future<void> _saveAllPersonal(List<SeSuggestion> suggestions) async {
+    var ok = 0;
+    for (final suggestion in suggestions) {
+      try {
+        await ref.read(seTicketRepositoryProvider).add(
+              numbers: suggestion.numbers,
+              superstar: suggestion.superstar,
+              origin: 'Personalizzato · ${suggestion.name}',
+              note: 'Algoritmo sull\'archivio. Nessun acquisto reale.',
+            );
+        ok++;
+      } catch (_) {}
+    }
+    ref.invalidate(seTicketsProvider);
+    if (!mounted) return;
+    setState(() => _message = ok == 0 ? 'Nessuna schedina registrata.' : 'Registrate $ok schedine personalizzate nel catalogo.');
+    if (ok > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$ok schedine personalizzate'),
+          action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(superenalottoHistoryProvider);
@@ -138,7 +179,12 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
               if (byDelay != 0) return byDelay;
               return a.number.compareTo(b.number);
             });
-          final suggestions = suggestSuperenalotto(draws);
+          final classic = suggestSuperenalotto(draws);
+          final personal = personalizedSuperenalotto(draws, forDrawDay: nextOpenDrawDate(DateTime.now()));
+          final tickets = ref.watch(seTicketsProvider).value ?? const <SeTicket>[];
+          final trends = seAutoTrendLines([
+            for (final t in tickets) (origin: t.origin, match: t.match),
+          ]);
           final latest = draws.reversed.take(5).toList();
           final fair = (superenalottoNumberProbability * 100).toStringAsFixed(2);
           return ListView(
@@ -146,12 +192,12 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
             children: [
               const SeHeroHeader(
                 title: 'Componi la giocata',
-                subtitle: 'Categorie a montepremi · separate dalle schedine Lotto in euro.',
+                subtitle: 'Consigli dall\'archivio · categorie a montepremi, non euro.',
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Text(
-                  'Probabilità equa di un numero nei sei: $fair%. Jolly e SuperStar non azzerano i ritardi dei sei.',
+                  'Probabilità equa di un numero nei sei: $fair%. Gli algoritmi sotto leggono le vecchie estrazioni: non prevedono il prossimo concorso.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -169,6 +215,13 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                 ),
               ],
               const SizedBox(height: 16),
+              ResultsBanner('I tuoi trend Auto', color: SeColors.forest),
+              for (final line in trends)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Text(line, style: Theme.of(context).textTheme.bodySmall),
+                ),
+              const SizedBox(height: 16),
               ResultsBanner('Ritardatari', color: SeColors.forest),
               if (draws.isEmpty)
                 const Padding(
@@ -183,49 +236,31 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                       ['${stat.number}', stat.neverSeen ? '${stat.delay} (mai)' : '${stat.delay}', '${stat.hits}', '$fair%'],
                   ],
                 ),
-              if (suggestions.isNotEmpty) ...[
+              if (classic.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                ResultsBanner('Suggerimenti', color: SeColors.forest),
-                for (final suggestion in suggestions)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(suggestion.name, style: const TextStyle(fontWeight: FontWeight.w800, color: SeColors.forest)),
-                        const SizedBox(height: 4),
-                        Text(suggestion.how, style: Theme.of(context).textTheme.bodySmall),
-                        const SizedBox(height: 8),
-                        NumberBalls(numbers: suggestion.numbers, gold: true),
-                        if (suggestion.jolly != null) ...[
-                          const SizedBox(height: 8),
-                          Text('Jolly suggerito: ${suggestion.jolly}', style: const TextStyle(color: SeColors.forest, fontWeight: FontWeight.w700)),
-                          if (suggestion.jollyHow != null) Text(suggestion.jollyHow!, style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                        if (suggestion.superstar != null) ...[
-                          const SizedBox(height: 8),
-                          Text('SuperStar suggerita: ${suggestion.superstar}', style: const TextStyle(color: SeColors.mint, fontWeight: FontWeight.w700)),
-                          if (suggestion.superstarHow != null) Text(suggestion.superstarHow!, style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                        const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: () => setState(() {
-                            _systemMode = false;
-                            _system = null;
-                            _selected
-                              ..clear()
-                              ..addAll(suggestion.numbers);
-                            _origin = suggestion.name.contains('Zoppe') ? 'zoppe' : 'suggerimento';
-                            _message = null;
-                            if (suggestion.superstar != null) {
-                              _superstar.text = '${suggestion.superstar}';
-                            }
-                          }),
-                          child: const Text('Metti in schedina'),
-                        ),
-                      ],
-                    ),
+                ResultsBanner('Suggerimenti classici', color: SeColors.forest),
+                for (final suggestion in classic) _SuggestionBlock(suggestion: suggestion, onUse: () => _applySuggestion(suggestion)),
+              ],
+              if (personal.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ResultsBanner('Algoritmi personalizzati', color: SeColors.forest),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Text(
+                    'Calcolati sulle tue estrazioni in archivio (mix, pari/dispari, somma, giorno, decadi, coppie).',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
+                ),
+                for (final suggestion in personal) _SuggestionBlock(suggestion: suggestion, onUse: () => _applySuggestion(suggestion, personal: true)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: FilledButton.tonalIcon(
+                    style: FilledButton.styleFrom(foregroundColor: SeColors.forest),
+                    onPressed: () => _saveAllPersonal(personal),
+                    icon: const Icon(Icons.playlist_add_check),
+                    label: Text('Registra tutte (${personal.length}) come schedine di studio'),
+                  ),
+                ),
               ],
               const SizedBox(height: 16),
               Padding(
@@ -307,6 +342,42 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _SuggestionBlock extends StatelessWidget {
+  const _SuggestionBlock({required this.suggestion, required this.onUse});
+
+  final SeSuggestion suggestion;
+  final VoidCallback onUse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(suggestion.name, style: const TextStyle(fontWeight: FontWeight.w800, color: SeColors.forest)),
+          const SizedBox(height: 4),
+          Text(suggestion.how, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          NumberBalls(numbers: suggestion.numbers, gold: true),
+          if (suggestion.jolly != null) ...[
+            const SizedBox(height: 8),
+            Text('Jolly suggerito: ${suggestion.jolly}', style: const TextStyle(color: SeColors.forest, fontWeight: FontWeight.w700)),
+            if (suggestion.jollyHow != null) Text(suggestion.jollyHow!, style: Theme.of(context).textTheme.bodySmall),
+          ],
+          if (suggestion.superstar != null) ...[
+            const SizedBox(height: 8),
+            Text('SuperStar suggerita: ${suggestion.superstar}', style: const TextStyle(color: SeColors.mint, fontWeight: FontWeight.w700)),
+            if (suggestion.superstarHow != null) Text(suggestion.superstarHow!, style: Theme.of(context).textTheme.bodySmall),
+          ],
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: onUse, child: const Text('Metti in schedina')),
+        ],
       ),
     );
   }

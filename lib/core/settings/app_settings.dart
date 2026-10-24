@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/virtual_wallet/domain/auto_study.dart';
+import '../lotto/prize_table.dart';
 
 /// Come il portafoglio simulato tratta i tetti di spesa.
 enum BudgetMode {
@@ -42,6 +43,12 @@ class AppSettings {
     required this.budgetMode,
     required this.autoStudyEnabled,
     required this.autoStudyMethod,
+    required this.autoSeEnabled,
+    required this.autoStakeEstrattoCents,
+    required this.autoStakeAmboCents,
+    required this.autoStakeTernoCents,
+    required this.autoStakeQuaternaCents,
+    required this.autoStakeCinquinaCents,
     required this.virtualCapitalCents,
     required this.contestBudgetCents,
     required this.monthlyBudgetCents,
@@ -59,13 +66,39 @@ class AppSettings {
   /// Se i limiti simulati devono bloccare le schedine.
   final BudgetMode budgetMode;
 
-  /// L'app crea da sola una schedina di studio per il prossimo concorso.
+  /// L'app crea da sola una schedina Lotto di studio per il prossimo concorso.
   final bool autoStudyEnabled;
   final AutoStudyMethod autoStudyMethod;
+
+  /// Crea anche le tre strategie SuperEnalotto (Zoppe, ritardi, frequenti) per confrontare i trend.
+  final bool autoSeEnabled;
+
+  final int autoStakeEstrattoCents;
+  final int autoStakeAmboCents;
+  final int autoStakeTernoCents;
+  final int autoStakeQuaternaCents;
+  final int autoStakeCinquinaCents;
+
   final int virtualCapitalCents;
   final int contestBudgetCents;
   final int monthlyBudgetCents;
   final int unitCostCents;
+
+  Map<LottoSorte, int> get autoStudyStakes => autoStudyStakesFrom(
+        estrattoCents: autoStakeEstrattoCents,
+        amboCents: autoStakeAmboCents,
+        ternoCents: autoStakeTernoCents,
+        quaternaCents: autoStakeQuaternaCents,
+        cinquinaCents: autoStakeCinquinaCents,
+      );
+
+  int autoStakeFor(LottoSorte sorte) => switch (sorte) {
+        LottoSorte.estratto => autoStakeEstrattoCents,
+        LottoSorte.ambo => autoStakeAmboCents,
+        LottoSorte.terno => autoStakeTernoCents,
+        LottoSorte.quaterna => autoStakeQuaternaCents,
+        LottoSorte.cinquina => autoStakeCinquinaCents,
+      };
 
   static const initial = AppSettings(
     onboardingCompleted: false,
@@ -76,6 +109,12 @@ class AppSettings {
     budgetMode: BudgetMode.limits,
     autoStudyEnabled: false,
     autoStudyMethod: AutoStudyMethod.zoppe,
+    autoSeEnabled: false,
+    autoStakeEstrattoCents: 0,
+    autoStakeAmboCents: 100,
+    autoStakeTernoCents: 100,
+    autoStakeQuaternaCents: 0,
+    autoStakeCinquinaCents: 0,
     virtualCapitalCents: 10000,
     contestBudgetCents: 500,
     monthlyBudgetCents: 2000,
@@ -91,6 +130,12 @@ class AppSettings {
     BudgetMode? budgetMode,
     bool? autoStudyEnabled,
     AutoStudyMethod? autoStudyMethod,
+    bool? autoSeEnabled,
+    int? autoStakeEstrattoCents,
+    int? autoStakeAmboCents,
+    int? autoStakeTernoCents,
+    int? autoStakeQuaternaCents,
+    int? autoStakeCinquinaCents,
     int? virtualCapitalCents,
     int? contestBudgetCents,
     int? monthlyBudgetCents,
@@ -105,10 +150,36 @@ class AppSettings {
       budgetMode: budgetMode ?? this.budgetMode,
       autoStudyEnabled: autoStudyEnabled ?? this.autoStudyEnabled,
       autoStudyMethod: autoStudyMethod ?? this.autoStudyMethod,
+      autoSeEnabled: autoSeEnabled ?? this.autoSeEnabled,
+      autoStakeEstrattoCents: autoStakeEstrattoCents ?? this.autoStakeEstrattoCents,
+      autoStakeAmboCents: autoStakeAmboCents ?? this.autoStakeAmboCents,
+      autoStakeTernoCents: autoStakeTernoCents ?? this.autoStakeTernoCents,
+      autoStakeQuaternaCents: autoStakeQuaternaCents ?? this.autoStakeQuaternaCents,
+      autoStakeCinquinaCents: autoStakeCinquinaCents ?? this.autoStakeCinquinaCents,
       virtualCapitalCents: virtualCapitalCents ?? this.virtualCapitalCents,
       contestBudgetCents: contestBudgetCents ?? this.contestBudgetCents,
       monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,
       unitCostCents: unitCostCents ?? this.unitCostCents,
+    );
+  }
+
+  AppSettings withAutoStake(LottoSorte sorte, int cents) {
+    return switch (sorte) {
+      LottoSorte.estratto => copyWith(autoStakeEstrattoCents: cents),
+      LottoSorte.ambo => copyWith(autoStakeAmboCents: cents),
+      LottoSorte.terno => copyWith(autoStakeTernoCents: cents),
+      LottoSorte.quaterna => copyWith(autoStakeQuaternaCents: cents),
+      LottoSorte.cinquina => copyWith(autoStakeCinquinaCents: cents),
+    };
+  }
+
+  AppSettings withSuggestedAutoStakes() {
+    return copyWith(
+      autoStakeEstrattoCents: suggestedAutoStakes[LottoSorte.estratto]!,
+      autoStakeAmboCents: suggestedAutoStakes[LottoSorte.ambo]!,
+      autoStakeTernoCents: suggestedAutoStakes[LottoSorte.terno]!,
+      autoStakeQuaternaCents: suggestedAutoStakes[LottoSorte.quaterna]!,
+      autoStakeCinquinaCents: suggestedAutoStakes[LottoSorte.cinquina]!,
     );
   }
 }

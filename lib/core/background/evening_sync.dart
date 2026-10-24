@@ -9,6 +9,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../../features/draws/data/archive_sync_service.dart';
 import '../../features/draws/data/draw_repository.dart';
+import '../../features/superenalotto/data/se_auto_study_service.dart';
 import '../../features/superenalotto/data/se_ticket_repository.dart';
 import '../../features/superenalotto/data/superenalotto_repository.dart';
 import '../../features/superenalotto/data/superenalotto_sync.dart';
@@ -179,20 +180,40 @@ class EveningSync {
     if (settings.notificationsEnabled) {
       await notifications?.showPreDrawReminder(drawDate: DateTime(now.year, now.month, now.day));
     }
-    // Prima della chiusura: crea la schedina di studio automatica, se attiva.
-    final auto = AutoStudyService(
-      settingsRepository: SettingsRepository(db),
-      wallet: WalletRepository(db),
-      draws: DrawRepository(db),
-    );
-    final created = await auto.ensureTicket(now: now, settings: settings);
-    if (created.created && settings.notificationsEnabled) {
-      await notifications?.showAutoTicketCreated(
-        methodLabel: created.method!.label,
-        wheelCode: settings.selectedWheelCode,
-        numbers: created.numbers,
-        targetDrawDate: nextOpenDrawDate(now),
+    // Prima della chiusura: schedine automatiche Lotto e SuperEnalotto.
+    final settingsRepo = SettingsRepository(db);
+    if (settings.autoStudyEnabled) {
+      final auto = AutoStudyService(
+        settingsRepository: settingsRepo,
+        wallet: WalletRepository(db),
+        draws: DrawRepository(db),
       );
+      final created = await auto.ensureTicket(now: now, settings: settings);
+      if (created.created && settings.notificationsEnabled) {
+        await notifications?.showAutoTicketCreated(
+          methodLabel: created.method!.label,
+          wheelCode: settings.selectedWheelCode,
+          numbers: created.numbers,
+          targetDrawDate: nextOpenDrawDate(now),
+        );
+      }
+    }
+    if (settings.autoSeEnabled) {
+      final se = SeAutoStudyService(
+        settingsRepository: settingsRepo,
+        tickets: SeTicketRepository(db),
+        draws: SuperenalottoRepository(db),
+      );
+      final result = await se.ensureTickets(now: now, settings: settings);
+      if (result.anyCreated && settings.notificationsEnabled) {
+        final first = result.created.first;
+        await notifications?.showAutoTicketCreated(
+          methodLabel: 'SE · ${result.created.length} strategie',
+          wheelCode: 'SE',
+          numbers: first.numbers,
+          targetDrawDate: nextOpenDrawDate(now),
+        );
+      }
     }
   }
 

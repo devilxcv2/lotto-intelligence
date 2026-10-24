@@ -1,38 +1,32 @@
 {
-  "versionName": "0.5.12",
-  "versionCode": 20,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.12/app-release.apk",
-  "notes": "Menu sotto più giovane (pillola flottante) e avvertenze in Più → Informazioni.",
+  "versionName": "0.5.14",
+  "versionCode": 22,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.14/app-release.apk",
+  "notes": "Schedine mirate ambo/terno/… su ruota; SuperEnalotto con algoritmi personalizzati sull'archivio e confronto trend.",
   "releases": [
+    {
+      "versionName": "0.5.14",
+      "versionCode": 22,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.14/app-release.apk",
+      "notes": "Mirate Lotto + algoritmi SE personalizzati."
+    },
     {
       "versionName": "0.5.12",
       "versionCode": 20,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.12/app-release.apk",
-      "notes": "Menu giovane e Informazioni al posto del disclaimer in Home."
+      "notes": "Menu giovane e Informazioni."
     },
     {
       "versionName": "0.5.11",
       "versionCode": 19,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.11/app-release.apk",
-      "notes": "Hub e catalogo SuperEnalotto separati dal Lotto."
+      "notes": "Hub SuperEnalotto."
     },
     {
       "versionName": "0.5.10",
       "versionCode": 18,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.10/app-release.apk",
       "notes": "Fix avviso aggiornamento."
-    },
-    {
-      "versionName": "0.5.9",
-      "versionCode": 17,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.9/app-release.apk",
-      "notes": "APK più leggero e menu più ordinati."
-    },
-    {
-      "versionName": "0.5.8",
-      "versionCode": 16,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.8/app-debug.apk",
-      "notes": "Catalogo esiti e auto-schedine."
     }
   ]
 }

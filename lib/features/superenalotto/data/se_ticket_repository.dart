@@ -7,6 +7,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/wheel_catalog.dart';
+import '../../virtual_wallet/domain/auto_study.dart';
 import '../domain/superenalotto_studio.dart';
 
 class SeTicket {
@@ -35,6 +36,8 @@ class SeTicket {
   final int? contestNumber;
 
   bool get isOpen => status == 'open';
+
+  bool get isAutoStudy => isAutoStudyNote(origin) || isAutoStudyNote(note);
 }
 
 class SeTicketRepository {
@@ -94,6 +97,17 @@ class SeTicketRepository {
           contestNumber: byTicket[ticket.id]?.contestNumber,
         ),
     ];
+  }
+
+  Future<bool> hasOpenAuto({required DateTime targetDrawDate, required AutoStudyMethod method}) async {
+    final target = dateOnlyUtc(targetDrawDate);
+    final open = await (_db.select(_db.superenalottoTickets)..where((row) => row.status.equals('open'))).get();
+    return open.any((row) {
+      final day = dateOnlyUtc(row.targetDrawDate.toUtc());
+      final sameDay = day.year == target.year && day.month == target.month && day.day == target.day;
+      final origin = row.origin;
+      return sameDay && (origin == method.noteTag || origin.startsWith('${method.noteTag}.'));
+    });
   }
 
   /// Chiude le schedine il cui concorso, lo stesso giorno, è in archivio.

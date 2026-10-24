@@ -11,6 +11,8 @@ import '../core/notifications/notification_service.dart';
 import '../core/settings/settings_controller.dart';
 import '../features/draws/data/archive_sync.dart';
 import '../features/draws/data/draw_repository.dart';
+import '../features/superenalotto/data/se_auto_study_service.dart';
+import '../features/superenalotto/data/se_ticket_repository.dart';
 import '../features/superenalotto/data/superenalotto_sync.dart';
 import '../features/virtual_wallet/data/auto_study_service.dart';
 import '../features/virtual_wallet/data/wallet_repository.dart';
@@ -115,18 +117,36 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
 
   Future<void> _ensureAutoStudy() async {
     final settings = ref.read(settingsControllerProvider).value;
-    if (settings == null || !settings.autoStudyEnabled) return;
-    final result = await ref.read(autoStudyServiceProvider).ensureTicket(settings: settings);
-    if (!result.created) return;
-    ref.invalidate(ticketsProvider);
-    ref.invalidate(walletSummaryProvider);
-    if (settings.notificationsEnabled) {
-      await NotificationService.instance.showAutoTicketCreated(
-        methodLabel: result.method!.label,
-        wheelCode: settings.selectedWheelCode,
-        numbers: result.numbers,
-        targetDrawDate: nextOpenDrawDate(DateTime.now()),
-      );
+    if (settings == null) return;
+    if (settings.autoStudyEnabled) {
+      final result = await ref.read(autoStudyServiceProvider).ensureTicket(settings: settings);
+      if (result.created) {
+        ref.invalidate(ticketsProvider);
+        ref.invalidate(walletSummaryProvider);
+        if (settings.notificationsEnabled) {
+          await NotificationService.instance.showAutoTicketCreated(
+            methodLabel: result.method!.label,
+            wheelCode: settings.selectedWheelCode,
+            numbers: result.numbers,
+            targetDrawDate: nextOpenDrawDate(DateTime.now()),
+          );
+        }
+      }
+    }
+    if (settings.autoSeEnabled) {
+      final se = await ref.read(seAutoStudyServiceProvider).ensureTickets(settings: settings);
+      if (se.anyCreated) {
+        ref.invalidate(seTicketsProvider);
+        if (settings.notificationsEnabled && se.created.isNotEmpty) {
+          final first = se.created.first;
+          await NotificationService.instance.showAutoTicketCreated(
+            methodLabel: 'SE · ${se.created.length} strategie',
+            wheelCode: 'SE',
+            numbers: first.numbers,
+            targetDrawDate: nextOpenDrawDate(DateTime.now()),
+          );
+        }
+      }
     }
   }
 

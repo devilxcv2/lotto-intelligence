@@ -21,6 +21,7 @@ import '../../../app/result_notice.dart';
 import '../data/auto_study_service.dart';
 import '../data/wallet_repository.dart';
 import '../domain/auto_study.dart';
+import '../domain/targeted_ticket.dart';
 
 /// Rotta della pagina «Nuova schedina», con numeri e ruota precompilati.
 String newTicketRoute({List<int>? numbers, String? wheel}) {
@@ -687,6 +688,9 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
   late String _wheel;
   var _appliedSettingsWheel = false;
   final Map<LottoSorte, int> _stakes = {LottoSorte.ambo: 100};
+  /// Se valorizzata: giocata mirata su una sola sorte (ambo/terno/…).
+  LottoSorte? _targetSorte;
+  var _mirataExtra = 0;
   String? _message;
   String? _hint;
   var _busy = false;
@@ -701,7 +705,38 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
     _wheel = widget.initialWheel ?? 'BA';
   }
 
-  TicketDraft get _draft => TicketDraft(wheelCode: _wheel, numbers: [..._numbers]..sort(), stakes: {..._stakes});
+  int get _suggestCount {
+    final target = _targetSorte;
+    if (target == null) return 5;
+    return targetedNumberCount(target, extra: _mirataExtra);
+  }
+
+  TicketDraft get _draft {
+    final wheelName = _wheel == allWheelsCode ? 'Tutte' : (wheelByCode(_wheel)?.name ?? _wheel);
+    final note = _targetSorte == null ? null : targetedNote(_targetSorte!, wheelName);
+    return TicketDraft(wheelCode: _wheel, numbers: [..._numbers]..sort(), stakes: {..._stakes}, note: note);
+  }
+
+  void _applyMirata(LottoSorte? sorte) {
+    setState(() {
+      _targetSorte = sorte;
+      _zoppeColumns = const [];
+      _zoppePreview = null;
+      _hint = null;
+      if (sorte == null) {
+        _stakes
+          ..clear()
+          ..[LottoSorte.ambo] = 100;
+        return;
+      }
+      _stakes
+        ..clear()
+        ..addAll(stakesForTargeted(sorte));
+      if (_numbers.length > targetedNumberCount(sorte, extra: _mirataExtra)) {
+        _numbers.removeRange(targetedNumberCount(sorte, extra: _mirataExtra), _numbers.length);
+      }
+    });
+  }
 
   String get _statsWheel =>
       _wheel == allWheelsCode ? (ref.read(settingsControllerProvider).value?.selectedWheelCode ?? 'BA') : _wheel;
@@ -728,14 +763,14 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
     return PageScaffold(
       title: 'Nuova schedina',
       child: ListView(
-        padding: const EdgeInsets.only(bottom: 28),
+        padding: const EdgeInsets.only(bottom: 96),
         children: [
-          const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 0), child: DisclaimerBanner()),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Text(
-              'Quattro passi: scegli la ruota, i numeri (anche con suggerimenti), le poste e registra. '
-              'È una giocata di studio: non parte nessun biglietto reale.',
+              _targetSorte == null
+                  ? 'Scegli ruota, numeri, poste e registra. Oppure attiva una giocata mirata (ambo, terno…). Studio, non biglietto reale.'
+                  : 'Mirata ${_targetSorte!.label}: posta solo su quella sorte, suggerimenti con ${_suggestCount} numeri su $wheelName.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -743,6 +778,58 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Text(budgetNote, style: Theme.of(context).textTheme.bodySmall),
+            ),
+          const SizedBox(height: 12),
+          const ResultsBanner('0 · Tipo di giocata'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Libera'),
+                  selected: _targetSorte == null,
+                  onSelected: (_) => _applyMirata(null),
+                  showCheckmark: false,
+                ),
+                for (final sorte in [LottoSorte.ambo, LottoSorte.terno, LottoSorte.quaterna, LottoSorte.cinquina])
+                  FilterChip(
+                    label: Text(sorte.label),
+                    selected: _targetSorte == sorte,
+                    onSelected: (_) => _applyMirata(sorte),
+                    showCheckmark: false,
+                  ),
+              ],
+            ),
+          ),
+          if (_targetSorte != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Numeri mirati: ${_suggestCount} (minimo ${_targetSorte!.hitsRequired}). '
+                    'Più numeri = più combinazioni della stessa sorte sulla ruota scelta.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Row(
+                    children: [
+                      const Text('Allarga'),
+                      IconButton(
+                        onPressed: _mirataExtra <= 0 ? null : () => setState(() => _mirataExtra--),
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text('+$_mirataExtra'),
+                      IconButton(
+                        onPressed: _mirataExtra >= 3 ? null : () => setState(() => _mirataExtra++),
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           const SizedBox(height: 12),
           const ResultsBanner('1 · Ruota'),
@@ -812,8 +899,10 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                 ),
                 const SizedBox(height: 8),
                 _SuggestionCard(
-                  title: 'Ritardatari',
-                  how: 'I cinque più assenti nelle ultime 100 estrazioni. Il ritardo non alza la probabilità.',
+                  title: _targetSorte == null ? 'Ritardatari' : 'Ritardatari · ${_targetSorte!.label}',
+                  how: _targetSorte == null
+                      ? 'I cinque più assenti nelle ultime 100 estrazioni. Il ritardo non alza la probabilità.'
+                      : 'I ${_suggestCount} più assenti su questa ruota, per una ${_targetSorte!.label.toLowerCase()} mirata.',
                   numbers: const [],
                   busy: _suggestBusy,
                   actionLabel: 'Usa ritardatari',
@@ -821,8 +910,10 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                 ),
                 const SizedBox(height: 8),
                 _SuggestionCard(
-                  title: 'Frequenti',
-                  how: 'I cinque più usciti nelle ultime 100 estrazioni. La frequenza non alza la probabilità.',
+                  title: _targetSorte == null ? 'Frequenti' : 'Frequenti · ${_targetSorte!.label}',
+                  how: _targetSorte == null
+                      ? 'I cinque più usciti nelle ultime 100 estrazioni. La frequenza non alza la probabilità.'
+                      : 'I ${_suggestCount} più usciti su questa ruota, per una ${_targetSorte!.label.toLowerCase()} mirata.',
                   numbers: const [],
                   busy: _suggestBusy,
                   actionLabel: 'Usa frequenti',
@@ -961,14 +1052,16 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
       } else {
         sorted.sort((a, b) => b.absoluteFrequency.compareTo(a.absoluteFrequency));
       }
+      final count = _suggestCount;
       setState(() {
         _zoppeColumns = const [];
         _numbers
           ..clear()
-          ..addAll(sorted.take(5).map((item) => item.number));
+          ..addAll(sorted.take(count).map((item) => item.number));
+        final sorteLabel = _targetSorte == null ? '' : ' · mirata ${_targetSorte!.label}';
         _hint = kind == _Fill.delays
-            ? 'Cinque ritardatari delle ultime 100 estrazioni su $_statsWheel. Il ritardo non alza la probabilità.'
-            : 'Cinque più frequenti delle ultime 100 estrazioni su $_statsWheel. La frequenza non alza la probabilità.';
+            ? '$count ritardatari delle ultime 100 estrazioni su $_statsWheel$sorteLabel. Il ritardo non alza la probabilità.'
+            : '$count più frequenti delle ultime 100 estrazioni su $_statsWheel$sorteLabel. La frequenza non alza la probabilità.';
       });
     } finally {
       if (mounted) setState(() => _suggestBusy = false);
@@ -984,12 +1077,14 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
       if (_zoppeColumns.isNotEmpty) {
         _zoppeIndex = (_zoppeIndex + 1) % _zoppeColumns.length;
         final column = _zoppeColumns[_zoppeIndex];
+        final take = column.take(_suggestCount);
         setState(() {
           _numbers
             ..clear()
-            ..addAll(column);
+            ..addAll(take);
           _hint =
-              'Zoppe colonna ${_zoppeIndex + 1} di ${_zoppeColumns.length} su $_statsWheel. '
+              'Zoppe colonna ${_zoppeIndex + 1} di ${_zoppeColumns.length} su $_statsWheel'
+              '${_targetSorte == null ? '' : ' · ${_targetSorte!.label} (${_suggestCount} numeri)'}. '
               'Probabilità equa 5/90 per ogni numero.';
         });
         return;
@@ -1014,15 +1109,17 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
         setState(() => _message = result.error ?? 'Zoppe non disponibile su questa ruota.');
         return;
       }
+      final lead = result.leadColumn.take(_suggestCount).toList();
       setState(() {
         _zoppePreview = result;
         _zoppeColumns = result.columns;
         _zoppeIndex = 0;
         _numbers
           ..clear()
-          ..addAll(result.leadColumn);
+          ..addAll(lead);
         _hint =
-            'Sistemone Zoppe su $_statsWheel: ${result.leadColumn.join(' · ')}. '
+            'Sistemone Zoppe su $_statsWheel: ${lead.join(' · ')}'
+            '${_targetSorte == null ? '' : ' · mirata ${_targetSorte!.label}'}. '
             'Tocca di nuovo «Altra colonna» per la successiva.';
       });
     } finally {
