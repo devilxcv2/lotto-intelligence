@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scarica Lotto Intelligence</title>
+  <meta name="description" content="Laboratorio di studio del Lotto italiano. Scarica l'APK Android più recente." />
+  <style>
+    :root {
+      --navy: #1b4e8c;
+      --sky: #2f6ead;
+      --gold: #f0a01a;
+      --ink: #1a2332;
+      --muted: #5a6a7e;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --line: #d8e0ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(47, 110, 173, 0.22), transparent 60%),
+        radial-gradient(900px 400px at 100% 0%, rgba(240, 160, 26, 0.18), transparent 55%),
+        var(--bg);
+    }
+    main {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--navy), var(--sky) 55%, var(--gold));
+      color: #fff;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 16px 40px rgba(27, 78, 140, 0.28);
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .hero p { margin: 0; opacity: 0.9; line-height: 1.45; font-size: 0.95rem; }
+    .card {
+      margin-top: 18px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .meta { color: var(--muted); font-size: 0.9rem; line-height: 1.4; margin: 0 0 16px; }
+    .meta strong { color: var(--ink); }
+    a.btn {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      background: var(--navy);
+      color: #fff;
+      font-weight: 700;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    a.btn.secondary {
+      background: transparent;
+      color: var(--navy);
+      border: 1px solid var(--line);
+    }
+    a.btn[aria-disabled="true"] {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .note {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .err { color: #b00020; font-size: 0.9rem; margin: 0 0 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Lotto Intelligence</h1>
+      <p>Laboratorio di studio del Lotto e SuperEnalotto. Nessuna previsione: solo archivio, sistemi e confronto degli esiti.</p>
+    </section>
+    <section class="card">
+      <p class="meta" id="status">Sto cercando l'ultima versione…</p>
+      <p class="err" id="error" hidden></p>
+      <a class="btn" id="apk" href="#" aria-disabled="true">Scarica APK Android</a>
+      <a class="btn secondary" href="https://github.com/devilxcv2/lotto-intelligence/releases/latest" rel="noopener">Pagina release su GitHub</a>
+      <p class="note">
+        Su Android: apri il file scaricato e, se richiesto, consenti l'installazione da questa fonte.
+        L'app non è sul Play Store. I soldi in app sono simulati, per studio.
+      </p>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var statusEl = document.getElementById('status');
+      var errorEl = document.getElementById('error');
+      var apkEl = document.getElementById('apk');
+      var urls = [
+        'https://cdn.jsdelivr.net/gh/devilxcv2/lotto-intelligence@main/dist/update.json',
+        'https://raw.githubusercontent.com/devilxcv2/lotto-intelligence/main/dist/update.json'
+      ];
+
+      function showError(msg) {
+        errorEl.hidden = false;
+        errorEl.textContent = msg;
+        statusEl.textContent = 'Versione non letta dal file pubblico. Usa il pulsante GitHub qui sotto.';
+      }
+
+      function apply(data) {
+        var name = data.versionName || '?';
+        var notes = data.notes || '';
+        var url = data.apkUrl;
+        if (!url) {
+          showError('Nel file manca l\'indirizzo dell\'APK.');
+          return;
+        }
+        statusEl.innerHTML = 'Ultima versione: <strong>' + name + '</strong>' +
+          (notes ? '<br>' + notes : '');
+        apkEl.href = url;
+        apkEl.removeAttribute('aria-disabled');
+      }
+
+      function tryFetch(i) {
+        if (i >= urls.length) {
+          showError('Rete o file non raggiungibile.');
+          return;
+        }
+        fetch(urls[i], { cache: 'no-store' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          })
+          .then(apply)
+          .catch(function () { tryFetch(i + 1); });
+      }
+
+      tryFetch(0);
+    })();
+  </script>
+</body>
+</html>

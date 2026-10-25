@@ -9,6 +9,7 @@ import '../features/dashboard/presentation/dashboard_page.dart';
 import '../features/dashboard/presentation/startup_pages.dart';
 import '../features/draws/presentation/draws_pages.dart';
 import '../features/settings/presentation/more_pages.dart';
+import '../features/settings/presentation/share_app_page.dart';
 import '../features/superenalotto/presentation/se_hub_page.dart';
 import '../features/superenalotto/presentation/se_studio_page.dart';
 import '../features/superenalotto/presentation/se_tickets_page.dart';
@@ -164,6 +165,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ],
                 ),
                 GoRoute(path: 'settings', builder: (context, state) => const SettingsPage()),
+                GoRoute(path: 'share', builder: (context, state) => const ShareAppPage()),
                 GoRoute(path: 'info', builder: (context, state) => const InfoPage()),
                 GoRoute(path: 'diagnostics', builder: (context, state) => const DiagnosticsPage()),
               ],

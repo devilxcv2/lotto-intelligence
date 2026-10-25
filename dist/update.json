@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.15",
-  "versionCode": 23,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.15/app-release.apk",
-  "notes": "Scheda Soldi: credito, budget, vincite e perché Zoppe/strategie non hanno centrato.",
+  "versionName": "0.5.16",
+  "versionCode": 24,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.16/app-release.apk",
+  "notes": "Pagina Condividi: link da inviare per scaricare l'app.",
   "releases": [
+    {
+      "versionName": "0.5.16",
+      "versionCode": 24,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.16/app-release.apk",
+      "notes": "Condividi link di download."
+    },
     {
       "versionName": "0.5.15",
       "versionCode": 23,
@@ -15,12 +21,6 @@
       "versionCode": 22,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.14/app-release.apk",
       "notes": "Mirate Lotto + algoritmi SE personalizzati."
-    },
-    {
-      "versionName": "0.5.12",
-      "versionCode": 20,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.12/app-release.apk",
-      "notes": "Menu giovane e Informazioni."
     }
   ]
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.16 — 2026-10-25
+
+Pagina Condividi.
+
+- In **Più → Condividi**: link da inviare, copia messaggio, foglio di condivisione di sistema.
+- Pagina pubblica `dist/download.html` con pulsante Scarica APK (legge sempre `update.json`).
+
 ## 0.5.15 — 2026-10-25
 
 Scheda Soldi in barra.
