@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.15 — 2026-10-25
+
+Scheda Soldi in barra.
+
+- Nuova voce **Soldi**: credito simulato, budget, vincite.
+- Per metodo (Zoppe, Auto, mirate…): saldo e centri medi.
+- Lettura didattica delle schedine chiuse: cosa ha centrato e perché il sistemone non “sbaglia” la probabilità.
+- Trend Auto SuperEnalotto nella stessa scheda.
+
 ## 0.5.14 — 2026-10-24
 
 Schedine mirate Lotto e algoritmi SE personalizzati.

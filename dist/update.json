@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.14",
-  "versionCode": 22,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.14/app-release.apk",
-  "notes": "Schedine mirate ambo/terno/… su ruota; SuperEnalotto con algoritmi personalizzati sull'archivio e confronto trend.",
+  "versionName": "0.5.15",
+  "versionCode": 23,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.15/app-release.apk",
+  "notes": "Scheda Soldi: credito, budget, vincite e perché Zoppe/strategie non hanno centrato.",
   "releases": [
+    {
+      "versionName": "0.5.15",
+      "versionCode": 23,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.15/app-release.apk",
+      "notes": "Scheda Soldi in barra con analisi degli esiti."
+    },
     {
       "versionName": "0.5.14",
       "versionCode": 22,
@@ -15,18 +21,6 @@
       "versionCode": 20,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.12/app-release.apk",
       "notes": "Menu giovane e Informazioni."
-    },
-    {
-      "versionName": "0.5.11",
-      "versionCode": 19,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.11/app-release.apk",
-      "notes": "Hub SuperEnalotto."
-    },
-    {
-      "versionName": "0.5.10",
-      "versionCode": 18,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.10/app-release.apk",
-      "notes": "Fix avviso aggiornamento."
     }
   ]
 }

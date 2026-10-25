@@ -16,6 +16,7 @@ import '../features/statistics/presentation/statistics_pages.dart';
 import '../features/discovery/presentation/discovery_page.dart';
 import '../features/systems/presentation/system_pages.dart';
 import '../features/systems/presentation/zoppe_page.dart';
+import '../features/virtual_wallet/presentation/budget_board_page.dart';
 import '../features/virtual_wallet/presentation/wallet_pages.dart';
 import 'app_shell.dart';
 
@@ -74,6 +75,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
               ],
             ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/budget', builder: (context, state) => const BudgetBoardPage()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(

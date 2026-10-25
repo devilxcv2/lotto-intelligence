@@ -75,8 +75,14 @@ class MoreHubPage extends StatelessWidget {
                     ),
                     HubTile(
                       icon: Icons.account_balance_wallet_outlined,
-                      title: 'Portafoglio',
-                      subtitle: 'Saldo simulato e limiti',
+                      title: 'Soldi e budget',
+                      subtitle: 'Credito, vincite, perché Zoppe non ha centrato',
+                      onTap: () => context.go('/budget'),
+                    ),
+                    HubTile(
+                      icon: Icons.tune_rounded,
+                      title: 'Limiti del portafoglio',
+                      subtitle: 'Capitale, concorso, mese',
                       onTap: () => context.push('/more/wallet'),
                     ),
                     HubTile(

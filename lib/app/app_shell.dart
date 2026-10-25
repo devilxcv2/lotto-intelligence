@@ -15,10 +15,12 @@ class AppShell extends StatelessWidget {
 
   final StatefulNavigationShell shell;
 
+  // Ordine = branch del router: Home → Extra → Ticket → Soldi → Lab → Più.
   static const _items = <_NavItem>[
     _NavItem(Icons.home_rounded, Icons.home_outlined, 'Home'),
     _NavItem(Icons.bolt_rounded, Icons.bolt_outlined, 'Extra'),
     _NavItem(Icons.confirmation_number_rounded, Icons.confirmation_number_outlined, 'Ticket'),
+    _NavItem(Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, 'Soldi'),
     _NavItem(Icons.auto_awesome_rounded, Icons.auto_awesome_outlined, 'Lab'),
     _NavItem(Icons.grid_view_rounded, Icons.grid_view_outlined, 'Più'),
   ];
