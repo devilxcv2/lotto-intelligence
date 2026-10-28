@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.18 — 2026-10-28
+
+Bacheca sistemi SuperEnalotto.
+
+- Tipologie Sisal: Integrale, Ridotto G5/G4/G3 (+ ruotanti), Basi e Varianti B1–B5, Cruciverba 6×6…9×9, Minicruciverba, Multistella.
+- Griglia sestine, costo a 1 €, tabelle di riferimento della bacheca ufficiale.
+- Voce in SuperEnalotto → Bacheca sistemi.
+
 ## 0.5.17 — 2026-10-28
 
 Maschera Sisal G5/G4/G3.

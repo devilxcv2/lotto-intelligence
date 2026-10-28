@@ -153,9 +153,16 @@ class SeHubPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       SeActionCard(
+                        icon: Icons.dashboard_customize_outlined,
+                        title: 'Bacheca sistemi',
+                        subtitle: 'Integrale, Ridotto, Basi/Varianti, Cruciverba, Multistella',
+                        onTap: () => context.push('/more/se/bacheca'),
+                      ),
+                      const SizedBox(height: 10),
+                      SeActionCard(
                         icon: Icons.view_module_outlined,
-                        title: 'Sistemi G5 / G4 / G3',
-                        subtitle: 'Maschera Sisal: griglia colonne e quanto spendi',
+                        title: 'Maschera G5 / G4 / G3',
+                        subtitle: 'Solo ridotti a garanzia con griglia e spesa',
                         onTap: () => context.push('/lab/sisal'),
                       ),
                       const SizedBox(height: 10),

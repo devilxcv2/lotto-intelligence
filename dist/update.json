@@ -1,26 +1,26 @@
 {
-  "versionName": "0.5.17",
-  "versionCode": 25,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.17/app-release.apk",
-  "notes": "Maschera Sisal: griglia colonne G5/G4/G3 e quanto spendi.",
+  "versionName": "0.5.18",
+  "versionCode": 26,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.18/app-release.apk",
+  "notes": "Bacheca sistemi SE: Integrale, Ridotto, Basi/Varianti, Cruciverba, Multistella.",
   "releases": [
+    {
+      "versionName": "0.5.18",
+      "versionCode": 26,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.18/app-release.apk",
+      "notes": "Tutte le tipologie della bacheca Sisal in studio."
+    },
     {
       "versionName": "0.5.17",
       "versionCode": 25,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.17/app-release.apk",
-      "notes": "Griglia sistemi Sisal e spesa simulata."
+      "notes": "Maschera G5/G4/G3 con griglia e spesa."
     },
     {
       "versionName": "0.5.16",
       "versionCode": 24,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.16/app-release.apk",
       "notes": "Condividi link di download."
-    },
-    {
-      "versionName": "0.5.15",
-      "versionCode": 23,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.15/app-release.apk",
-      "notes": "Scheda Soldi in barra con analisi degli esiti."
     }
   ]
 }

@@ -10,6 +10,7 @@ import '../features/dashboard/presentation/startup_pages.dart';
 import '../features/draws/presentation/draws_pages.dart';
 import '../features/settings/presentation/more_pages.dart';
 import '../features/settings/presentation/share_app_page.dart';
+import '../features/superenalotto/presentation/se_bacheca_page.dart';
 import '../features/superenalotto/presentation/se_hub_page.dart';
 import '../features/superenalotto/presentation/se_studio_page.dart';
 import '../features/superenalotto/presentation/se_tickets_page.dart';
@@ -141,6 +142,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                     ),
                     GoRoute(path: 'tickets', builder: (context, state) => const SeTicketsPage()),
+                    GoRoute(path: 'bacheca', builder: (context, state) => const SeBachecaPage()),
                   ],
                 ),
                 // Vecchio percorso → studio dentro l'area SuperEnalotto.
