@@ -314,7 +314,11 @@ String? reducedParametersProblem({
     return 'Le colonne devono avere da $minColumnSize a $maxColumnSize numeri.';
   }
   if (combinationSize >= poolSize) return 'Il pronostico deve avere più numeri della colonna.';
-  if (assumedHits < 2 || assumedHits > 5) return 'Si possono ipotizzare da 2 a 5 estratti nel pronostico.';
+  // Lotto fino a 5; SuperEnalotto / G5–G3 fino a combinationSize (max 10).
+  final maxAssumed = min(combinationSize, maxColumnSize);
+  if (assumedHits < 2 || assumedHits > maxAssumed) {
+    return 'Si possono ipotizzare da 2 a $maxAssumed numeri estratti nel pronostico.';
+  }
   if (assumedHits > poolSize) return 'Il pronostico ha meno numeri degli estratti ipotizzati.';
   if (guaranteedHits < 2 || guaranteedHits > assumedHits || guaranteedHits > combinationSize) {
     return 'La garanzia deve essere fra 2 e il minimo fra estratti ipotizzati e numeri per colonna.';
@@ -326,8 +330,9 @@ String? reducedParametersProblem({
   return null;
 }
 
-/// Sistema ridotto: se almeno [assumedHits] dei 5 estratti cadono nel
+/// Sistema ridotto: se almeno [assumedHits] estratti cadono nel
 /// pronostico, almeno una colonna ne contiene [guaranteedHits] o più.
+/// Maschera Sisal G5/G4/G3: tipicamente assumedHits = 5 (Lotto) o 6 (SE).
 ///
 /// Costruzione greedy (ogni colonna scelta fra candidati casuali con seed
 /// riproducibile, prendendo quella che copre più casi ancora scoperti),
@@ -428,12 +433,20 @@ GenerationResult generateReduced({
     cancelled: false,
     guaranteeVerified: verified,
     coverageClaim: verified
-        ? 'Ridotto verificato: se almeno $assumedHits dei 5 estratti sono fra i $v numeri del pronostico, '
+        ? 'Ridotto verificato${_sisalTag(assumedHits, guaranteedHits, combinationSize)}: '
+            'se almeno $assumedHits estratti sono fra i $v numeri del pronostico, '
             'almeno una delle ${columns.length} colonne ne contiene $guaranteedHits o più. '
             'Controllati tutti i ${cases.length} casi. L\'integrale in colonne da $combinationSize avrebbe ${estimate.total} colonne. '
             'La garanzia è combinatoria: non rende più probabile che i numeri del pronostico escano.'
         : 'La verifica esaustiva non ha confermato la garanzia. Le colonne non vanno lette come ridotto garantito.',
   );
+}
+
+String _sisalTag(int assumedHits, int guaranteedHits, int combinationSize) {
+  final drawnOk = (assumedHits == 5 && combinationSize >= 5) || (assumedHits == 6 && combinationSize >= 6);
+  if (!drawnOk) return '';
+  if (guaranteedHits == 5 || guaranteedHits == 4 || guaranteedHits == 3) return ' · G$guaranteedHits';
+  return '';
 }
 
 /// Ricontrolla da zero ogni sottoinsieme di [assumedHits] indici del pronostico.

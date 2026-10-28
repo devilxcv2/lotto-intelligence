@@ -153,6 +153,13 @@ class SeHubPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       SeActionCard(
+                        icon: Icons.view_module_outlined,
+                        title: 'Sistemi G5 / G4 / G3',
+                        subtitle: 'Maschera Sisal: griglia colonne e quanto spendi',
+                        onTap: () => context.push('/lab/sisal'),
+                      ),
+                      const SizedBox(height: 10),
+                      SeActionCard(
                         icon: Icons.receipt_long_outlined,
                         title: 'Catalogo schedine',
                         subtitle: open + closed == 0

@@ -15,6 +15,7 @@ import '../features/superenalotto/presentation/se_studio_page.dart';
 import '../features/superenalotto/presentation/se_tickets_page.dart';
 import '../features/statistics/presentation/statistics_pages.dart';
 import '../features/discovery/presentation/discovery_page.dart';
+import '../features/systems/presentation/sisal_board_page.dart';
 import '../features/systems/presentation/system_pages.dart';
 import '../features/systems/presentation/zoppe_page.dart';
 import '../features/virtual_wallet/presentation/budget_board_page.dart';
@@ -86,6 +87,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => const LabHubPage(),
               routes: [
                 GoRoute(path: 'systems', builder: (context, state) => const SystemBuilderPage()),
+                GoRoute(
+                  path: 'sisal',
+                  builder: (context, state) => SisalBoardPage(
+                    forSuperEnalotto: state.uri.queryParameters['game'] != 'lotto',
+                  ),
+                ),
                 GoRoute(path: 'strategies', builder: (context, state) => const StrategiesPage()),
                 GoRoute(path: 'ai', builder: (context, state) => const AiLabPage()),
                 GoRoute(path: 'models', builder: (context, state) => const AiModelsPage()),

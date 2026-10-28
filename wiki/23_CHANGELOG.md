@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.17 — 2026-10-28
+
+Maschera Sisal G5/G4/G3.
+
+- Lab → **Maschera Sisal**: griglia colonne sviluppate, garanzia G5/G4/G3, footer con Comb e totale come Sisal.
+- SuperEnalotto hub → **Sistemi G5/G4/G3**.
+- Scheda «Quanto spendi»: confronto con l’integrale, tabella di riferimento Sisal SE, avviso budget.
+
 ## 0.5.16 — 2026-10-25
 
 Pagina Condividi.

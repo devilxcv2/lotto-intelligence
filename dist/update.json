@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.16",
-  "versionCode": 24,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.16/app-release.apk",
-  "notes": "Pagina Condividi: link da inviare per scaricare l'app.",
+  "versionName": "0.5.17",
+  "versionCode": 25,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.17/app-release.apk",
+  "notes": "Maschera Sisal: griglia colonne G5/G4/G3 e quanto spendi.",
   "releases": [
+    {
+      "versionName": "0.5.17",
+      "versionCode": 25,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.17/app-release.apk",
+      "notes": "Griglia sistemi Sisal e spesa simulata."
+    },
     {
       "versionName": "0.5.16",
       "versionCode": 24,
@@ -15,12 +21,6 @@
       "versionCode": 23,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.15/app-release.apk",
       "notes": "Scheda Soldi in barra con analisi degli esiti."
-    },
-    {
-      "versionName": "0.5.14",
-      "versionCode": 22,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.14/app-release.apk",
-      "notes": "Mirate Lotto + algoritmi SE personalizzati."
     }
   ]
 }

@@ -51,6 +51,12 @@ class LabHubPage extends StatelessWidget {
                 onTap: () => context.push('/lab/zoppe'),
               ),
               HubTile(
+                icon: Icons.view_module_outlined,
+                title: 'Maschera Sisal G5/G4/G3',
+                subtitle: 'Griglia colonne, garanzia e quanto spendi',
+                onTap: () => context.push('/lab/sisal'),
+              ),
+              HubTile(
                 icon: Icons.grid_view_outlined,
                 title: 'System builder',
                 subtitle: 'Integrali, ridotti, casuali e filtri',
