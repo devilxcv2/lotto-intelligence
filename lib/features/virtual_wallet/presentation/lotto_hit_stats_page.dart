@@ -129,57 +129,78 @@ class _NumberCard extends StatelessWidget {
       return '$name ×${e.value}';
     }).join(' · ');
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                NumberBalls(numbers: [stat.number], hits: {stat.number}, compact: true),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    stat.payingTickets > 0
-                        ? '${stat.payingTickets} vincite · netto ${formatEuro(stat.netCents)}'
-                        : '${stat.hitTickets} centri (senza euro)',
-                    style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.navy),
-                  ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: stat.payingTickets > 0 ? AppColors.banner.withValues(alpha: 0.45) : AppColors.line,
+        ),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              NumberBalls(numbers: [stat.number], hits: {stat.number}, compact: true),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  stat.payingTickets > 0
+                      ? '${stat.payingTickets} vincite · netto ${formatEuro(stat.netCents)}'
+                      : '${stat.hitTickets} centri (senza euro)',
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.navy),
                 ),
+              ),
+              TextButton(
+                onPressed: () => context.push(newTicketRoute(numbers: [stat.number])),
+                child: const Text('Usa'),
+              ),
+            ],
+          ),
+          if (played.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Nelle tue schedine: $played', style: Theme.of(context).textTheme.bodySmall),
+          ],
+          const SizedBox(height: 10),
+          Text(
+            wheelBits.isEmpty ? 'Nelle ultime uscite: non ricomparso.' : 'Ultime uscite per ruota',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          ),
+          if (wheelBits.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final e in wheelBits.take(8))
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.navy.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${wheelByCode(e.key)?.name ?? e.key} ×${e.value}',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.navy),
+                    ),
+                  ),
               ],
             ),
-            if (played.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text('Nelle tue schedine: $played', style: Theme.of(context).textTheme.bodySmall),
-            ],
+          ],
+          if (stat.recentAppearances.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              wheelBits.isEmpty
-                  ? 'Nelle ultime uscite: non ricomparso.'
-                  : 'Ultime uscite: ${wheelBits.map((e) => '${wheelByCode(e.key)?.name ?? e.key} ×${e.value}').join(' · ')}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            if (stat.recentAppearances.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                [
-                  for (final row in stat.recentAppearances.take(6))
-                    '${formatItalianDate(row.date)} ${wheelByCode(row.wheelCode)?.name ?? row.wheelCode}',
-                ].join(' · '),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => context.push(newTicketRoute(numbers: [stat.number])),
-                child: const Text('Usa in nuova'),
-              ),
+              [
+                for (final row in stat.recentAppearances.take(5))
+                  '${formatItalianDate(row.date)} ${wheelByCode(row.wheelCode)?.name ?? row.wheelCode}',
+              ].join(' · '),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
-        ),
+        ],
       ),
     );
   }

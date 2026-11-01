@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/app_settings.dart';
+import '../../../shared/widgets/common_widgets.dart';
 import '../../superenalotto/data/se_ticket_repository.dart';
 import '../../superenalotto/domain/se_prize_estimates.dart';
 import '../../superenalotto/presentation/se_chrome.dart';
@@ -51,7 +52,7 @@ class _TicketHistoryPageState extends ConsumerState<TicketHistoryPage> {
           IconButton(
             tooltip: 'Crea',
             onPressed: () => context.push('/tickets/quick'),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_circle_outline),
           ),
         ],
       ),
@@ -66,10 +67,8 @@ class _TicketHistoryPageState extends ConsumerState<TicketHistoryPage> {
               data: (lotto) {
                 final se = seAsync.value ?? const <SeTicket>[];
                 final rows = <_HistoryRow>[
-                  for (final t in lotto)
-                    _HistoryRow.lotto(t),
-                  for (final t in se)
-                    _HistoryRow.se(t),
+                  for (final t in lotto) _HistoryRow.lotto(t),
+                  for (final t in se) _HistoryRow.se(t),
                 ]..sort((a, b) => b.sortDate.compareTo(a.sortDate));
 
                 final shown = rows.where((row) {
@@ -91,18 +90,24 @@ class _TicketHistoryPageState extends ConsumerState<TicketHistoryPage> {
                         child: Row(
                           children: [
                             for (final entry in [
-                              (_HistoryFilter.all, 'Tutte (${rows.length})'),
-                              (_HistoryFilter.lotto, 'Lotto (${lotto.length})'),
-                              (_HistoryFilter.se, 'SE (${se.length})'),
-                              (_HistoryFilter.open, 'In attesa (${rows.where((r) => r.isOpen).length})'),
-                              (_HistoryFilter.wins, 'Vincite (${rows.where((r) => r.isWin).length})'),
+                              (_HistoryFilter.all, 'Tutte', rows.length),
+                              (_HistoryFilter.lotto, 'Lotto', lotto.length),
+                              (_HistoryFilter.se, 'SE', se.length),
+                              (_HistoryFilter.open, 'Attesa', rows.where((r) => r.isOpen).length),
+                              (_HistoryFilter.wins, 'Vincite', rows.where((r) => r.isWin).length),
                             ])
                               Padding(
-                                padding: const EdgeInsets.only(right: 6),
-                                child: ChoiceChip(
-                                  label: Text(entry.$2),
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
                                   selected: _filter == entry.$1,
+                                  label: Text('${entry.$2} ${entry.$3}'),
                                   onSelected: (_) => setState(() => _filter = entry.$1),
+                                  selectedColor: AppColors.navy.withValues(alpha: 0.14),
+                                  checkmarkColor: AppColors.navy,
+                                  labelStyle: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: _filter == entry.$1 ? AppColors.navy : AppColors.ink.withValues(alpha: 0.7),
+                                  ),
                                 ),
                               ),
                           ],
@@ -111,7 +116,15 @@ class _TicketHistoryPageState extends ConsumerState<TicketHistoryPage> {
                     ),
                     Expanded(
                       child: shown.isEmpty
-                          ? const Center(child: Text('Nessuna schedina in questo filtro.'))
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Text(
+                                  'Nessuna schedina in questo filtro.',
+                                  style: TextStyle(color: AppColors.ink.withValues(alpha: 0.55)),
+                                ),
+                              ),
+                            )
                           : ListView.builder(
                               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                               itemCount: shown.length,
@@ -149,9 +162,7 @@ class _HistoryRow {
 
   bool get isOpen => isSe ? se!.isOpen : lotto!.isOpen;
 
-  bool get isWin => isSe
-      ? (se!.match?.isCategoryWin == true)
-      : (lotto!.evaluation?.isWin == true);
+  bool get isWin => isSe ? (se!.match?.isCategoryWin == true) : (lotto!.evaluation?.isWin == true);
 }
 
 class _HistoryTile extends StatelessWidget {
@@ -164,63 +175,140 @@ class _HistoryTile extends StatelessWidget {
     if (row.isSe) {
       final t = row.se!;
       final money = t.match == null ? null : estimateSeWin(t.match!);
-      return Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: SeColors.forest.withValues(alpha: 0.12),
-            child: const Icon(Icons.stars, color: SeColors.forest, size: 20),
-          ),
-          title: Text(
-            'SE · ${formatItalianDate(t.targetDrawDate)}'
-            '${t.match == null ? '' : ' · ${t.match!.label}'}',
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          subtitle: Text(
-            [
-              t.numbers.join(' · '),
-              if (money != null && (money.estimatedCents > 0 || money.isJackpot)) money.shortEuro,
-              if (t.isOpen) 'in attesa',
-            ].join(' · '),
-          ),
-          trailing: IconButton(
-            tooltip: 'Rigioca',
-            onPressed: () => context.push(seStudioRoute(numbers: t.numbers)),
-            icon: const Icon(Icons.replay),
-          ),
-          onTap: () => context.push('/more/se/tickets'),
-        ),
+      return _TicketCard(
+        accent: SeColors.forest,
+        badge: 'SE',
+        title: formatItalianDate(t.targetDrawDate),
+        status: t.isOpen
+            ? 'In attesa'
+            : (t.match?.label ?? 'Valutata'),
+        win: row.isWin,
+        numbers: t.numbers,
+        gold: true,
+        meta: [
+          if (money != null && (money.estimatedCents > 0 || money.isJackpot)) money.shortEuro,
+          t.origin,
+        ].where((s) => s.isNotEmpty).join(' · '),
+        onReplay: () => context.push(seStudioRoute(numbers: t.numbers)),
+        onOpen: () => context.push('/more/se/tickets'),
       );
     }
 
     final t = row.lotto!;
     final wheel = t.coversAllWheels ? 'Tutte' : (wheelByCode(t.wheelCode)?.name ?? t.wheelCode);
     final eval = t.evaluation;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.navy.withValues(alpha: 0.12),
-          child: const Icon(Icons.confirmation_number_outlined, color: AppColors.navy, size: 20),
+    return _TicketCard(
+      accent: AppColors.navy,
+      badge: 'Lotto',
+      title: '$wheel · ${formatItalianDate(t.targetDrawDate ?? t.createdAt)}',
+      status: t.isOpen
+          ? 'In attesa'
+          : (eval?.isWin == true ? 'Netto ${formatEuro(eval!.netCents)}' : 'Nessuna vincita'),
+      win: row.isWin,
+      numbers: t.numbers,
+      gold: false,
+      meta: formatEuro(t.stakeCents),
+      onReplay: () => context.push(newTicketRoute(numbers: t.numbers, wheel: t.wheelCode, stakes: t.stakes)),
+      onOpen: () => context.push('/tickets/${t.id}'),
+    );
+  }
+}
+
+class _TicketCard extends StatelessWidget {
+  const _TicketCard({
+    required this.accent,
+    required this.badge,
+    required this.title,
+    required this.status,
+    required this.win,
+    required this.numbers,
+    required this.gold,
+    required this.meta,
+    required this.onReplay,
+    required this.onOpen,
+  });
+
+  final Color accent;
+  final String badge;
+  final String title;
+  final String status;
+  final bool win;
+  final List<int> numbers;
+  final bool gold;
+  final String meta;
+  final VoidCallback onReplay;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: win ? AppColors.banner.withValues(alpha: 0.55) : AppColors.line),
         ),
-        title: Text(
-          'Lotto · $wheel · ${formatItalianDate(t.targetDrawDate ?? t.createdAt)}',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onOpen,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 5,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(badge, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: accent)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                            ),
+                            IconButton(
+                              tooltip: 'Rigioca',
+                              onPressed: onReplay,
+                              visualDensity: VisualDensity.compact,
+                              icon: Icon(Icons.replay, color: accent, size: 20),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        NumberBalls(numbers: numbers, gold: gold, compact: true),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$status${meta.isEmpty ? '' : ' · $meta'}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontWeight: win ? FontWeight.w700 : FontWeight.w500,
+                                color: win ? AppColors.wheel : AppColors.ink.withValues(alpha: 0.65),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        subtitle: Text(
-          [
-            t.numbers.join(' · '),
-            formatEuro(t.stakeCents),
-            if (eval != null && eval.isWin) 'netto ${formatEuro(eval.netCents)}',
-            if (t.isOpen) 'in attesa',
-          ].join(' · '),
-        ),
-        trailing: IconButton(
-          tooltip: 'Rigioca',
-          onPressed: () => context.push(newTicketRoute(numbers: t.numbers, wheel: t.wheelCode, stakes: t.stakes)),
-          icon: const Icon(Icons.replay),
-        ),
-        onTap: () => context.push('/tickets/${t.id}'),
       ),
     );
   }

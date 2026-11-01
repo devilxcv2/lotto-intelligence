@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.20",
-  "versionCode": 28,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.20/app-release.apk",
-  "notes": "Menu Ticket: crea rapido, storico unificato, numeri Lotto/SE che hanno pagato vs ultime uscite.",
+  "versionName": "0.5.21",
+  "versionCode": 29,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.21/app-release.apk",
+  "notes": "Ritocco grafico Ticket: hub, crea, storico e stats più chiari.",
   "releases": [
+    {
+      "versionName": "0.5.21",
+      "versionCode": 29,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.21/app-release.apk",
+      "notes": "UI Ticket e menu hub più ordinati."
+    },
     {
       "versionName": "0.5.20",
       "versionCode": 28,
@@ -21,12 +27,6 @@
       "versionCode": 26,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.18/app-release.apk",
       "notes": "Tutte le tipologie della bacheca Sisal in studio."
-    },
-    {
-      "versionName": "0.5.17",
-      "versionCode": 25,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.17/app-release.apk",
-      "notes": "Maschera G5/G4/G3 con griglia e spesa."
     }
   ]
 }

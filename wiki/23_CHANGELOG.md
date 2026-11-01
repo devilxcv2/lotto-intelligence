@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.21 — 2026-11-01
+
+Ritocco grafico Ticket e menu.
+
+- Hub Ticket con card Crea/Storico e conteggi in evidenza.
+- Crea schedina: barra azione fissa, griglia più leggibile, colori Lotto/SE.
+- Storico a card con fascia colore, palline e stato.
+- Stats numeri e HubTile dei menu più ordinati.
+
 ## 0.5.20 — 2026-11-01
 
 Menu Ticket: crea, storico e numeri che hanno pagato.

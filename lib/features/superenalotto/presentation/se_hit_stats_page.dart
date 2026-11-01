@@ -113,53 +113,76 @@ class _SeNumberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                NumberBalls(numbers: [stat.number], gold: true, compact: true),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '${stat.categoryTickets} categorie'
-                    '${stat.estimatedCents > 0 ? ' · stima ${formatEuro(stat.estimatedCents)}' : ''}',
-                    style: const TextStyle(fontWeight: FontWeight.w800, color: SeColors.forest),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              [
-                if (stat.asMainHits > 0) 'nei sei ×${stat.asMainHits}',
-                if (stat.asJolly > 0) 'Jolly ×${stat.asJolly}',
-                if (stat.asSuperstar > 0) 'SuperStar ×${stat.asSuperstar}',
-              ].join(' · '),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              stat.recentTotal == 0
-                  ? 'Nelle ultime uscite: non ricomparso.'
-                  : 'Ultime uscite: sei ×${stat.recentMain} · Jolly ×${stat.recentJolly} · SuperStar ×${stat.recentSuperstar}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => context.push(seStudioRoute(numbers: [stat.number])),
-                child: const Text('Metti in studio'),
-              ),
-            ),
-          ],
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: stat.estimatedCents > 0 ? SeColors.gold.withValues(alpha: 0.55) : const Color(0xFFC5D9C0),
         ),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              NumberBalls(numbers: [stat.number], gold: true, compact: true),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '${stat.categoryTickets} categorie'
+                  '${stat.estimatedCents > 0 ? ' · stima ${formatEuro(stat.estimatedCents)}' : ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: SeColors.forest),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push(seStudioRoute(numbers: [stat.number])),
+                child: const Text('Studio'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (stat.asMainHits > 0) _chip('Nei sei ×${stat.asMainHits}'),
+              if (stat.asJolly > 0) _chip('Jolly ×${stat.asJolly}'),
+              if (stat.asSuperstar > 0) _chip('SuperStar ×${stat.asSuperstar}'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            stat.recentTotal == 0 ? 'Nelle ultime uscite: non ricomparso.' : 'Ultime uscite',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          ),
+          if (stat.recentTotal > 0) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (stat.recentMain > 0) _chip('Sei ×${stat.recentMain}'),
+                if (stat.recentJolly > 0) _chip('Jolly ×${stat.recentJolly}'),
+                if (stat.recentSuperstar > 0) _chip('SuperStar ×${stat.recentSuperstar}'),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: SeColors.forest.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: SeColors.forest)),
     );
   }
 }
