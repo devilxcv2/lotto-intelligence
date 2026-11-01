@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.23 — 2026-11-01
+
+Segnalazioni dall’app.
+
+- **Più → Segnala bug o richiesta**: apre Issue GitHub precompilata (bug / richiesta / idea).
+- Copia locale in outbox per uno smistamento futuro su database.
+- Nota di roadmap: studio AI collettivo su schedine (con consenso) + ZIP estrazioni.
+
 ## 0.5.22 — 2026-11-01
 
 Home semplificata e archivio automatico.

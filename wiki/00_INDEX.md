@@ -32,5 +32,6 @@ Lotto Intelligence AI è un laboratorio locale sul Gioco del Lotto. Le pagine so
 | [26_API_REFERENCE](26_API_REFERENCE.md) | Funzioni pubbliche principali |
 | [27_KNOWN_LIMITATIONS](27_KNOWN_LIMITATIONS.md) | Cosa manca |
 | [28_PRIZES_AND_ALERTS](28_PRIZES_AND_ALERTS.md) | Tabella premi, schedine valutate, aggiornamento serale e notifiche |
+| [29_FEEDBACK_AND_COLLECTIVE_STUDY](29_FEEDBACK_AND_COLLECTIVE_STUDY.md) | Segnalazioni GitHub, outbox locale, roadmap AI collettivo |
 
 L'app legge le stesse pagine da `wiki/` come asset, quindi restano disponibili offline.

@@ -1,7 +1,7 @@
 name: lotto_intelligence
 description: Laboratorio di analisi del Lotto italiano. Statistiche descrittive, sistemi e backtest, senza pretese predittive.
 publish_to: 'none'
-version: 0.5.22+30
+version: 0.5.23+31
 
 environment:
   sdk: ^3.11.4
@@ -31,6 +31,7 @@ dependencies:
   package_info_plus: ^10.2.2
   open_filex: ^4.7.0
   share_plus: ^13.3.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

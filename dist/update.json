@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.22",
-  "versionCode": 30,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.22/app-release.apk",
-  "notes": "Home a pannelli sbloccabili; archivio automatico con retry; download manuale solo in Extra.",
+  "versionName": "0.5.23",
+  "versionCode": 31,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.23/app-release.apk",
+  "notes": "Segnala bug e richieste da Più: arrivano su GitHub Issues, con copia locale per dopo.",
   "releases": [
+    {
+      "versionName": "0.5.23",
+      "versionCode": 31,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.23/app-release.apk",
+      "notes": "Feedback da app verso GitHub Issues."
+    },
     {
       "versionName": "0.5.22",
       "versionCode": 30,
@@ -20,13 +26,7 @@
       "versionName": "0.5.20",
       "versionCode": 28,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.20/app-release.apk",
-      "notes": "Hub Ticket con stats numeri vincenti, crea e storico."
-    },
-    {
-      "versionName": "0.5.19",
-      "versionCode": 27,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.19/app-release.apk",
-      "notes": "Rigioca, budget SE, stime euro, Soldi, posta minima."
+      "notes": "Hub Ticket con stats, crea e storico."
     }
   ]
 }

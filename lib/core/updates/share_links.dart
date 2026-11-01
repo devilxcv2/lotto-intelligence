@@ -14,6 +14,13 @@ abstract final class AppShareLinks {
 
   static const updateManifestUrl = SettingsRepository.defaultUpdateManifestUrl;
 
+  /// Issues GitHub: qui arrivano bug e richieste dall'app.
+  static const feedbackIssuesUrl =
+      'https://github.com/devilxcv2/lotto-intelligence/issues';
+
+  static const feedbackNewIssueBase =
+      'https://github.com/devilxcv2/lotto-intelligence/issues/new';
+
   /// Testo pronto da incollare in chat.
   static String inviteMessage({String? versionName, String? apkUrl}) {
     final buffer = StringBuffer()

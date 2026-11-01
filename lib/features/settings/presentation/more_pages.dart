@@ -115,6 +115,12 @@ class MoreHubPage extends StatelessWidget {
                   title: 'Scopri',
                   children: [
                     HubTile(
+                      icon: Icons.bug_report_outlined,
+                      title: 'Segnala bug o richiesta',
+                      subtitle: 'Ci arriva su GitHub · migliora l\'app',
+                      onTap: () => context.push('/more/feedback'),
+                    ),
+                    HubTile(
                       icon: Icons.ios_share_rounded,
                       title: 'Condividi',
                       subtitle: 'Link da inviare per scaricare l\'app',
