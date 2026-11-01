@@ -48,13 +48,20 @@ class ArchiveSyncService {
 
   Future<({PreparedImport prepared, String? lastModified})> downloadOfficial({SyncProgress? onProgress}) async {
     Object? lastError;
-    for (var attempt = 0; attempt < 3; attempt++) {
+    // Più tentativi: di sera lo ZIP a volte risponde tardi o con errori temporanei.
+    for (var attempt = 0; attempt < 5; attempt++) {
       try {
+        onProgress?.call(
+          attempt == 0 ? 'Scarico l\'archivio pubblicato' : 'Nuovo tentativo di scarico (${attempt + 1}/5)',
+          0.04 + attempt * 0.02,
+        );
         final response = await dio.get<List<int>>(
           OfficialArchiveLocations.archiveUrl,
           options: Options(
             responseType: ResponseType.bytes,
             headers: {'User-Agent': OfficialArchiveLocations.userAgent},
+            receiveTimeout: const Duration(seconds: 90),
+            sendTimeout: const Duration(seconds: 30),
           ),
           onReceiveProgress: (received, total) {
             final fraction = total <= 0 ? null : received / total;
@@ -71,11 +78,15 @@ class ArchiveSyncService {
       } on DioException catch (error) {
         lastError = error;
         final code = error.response?.statusCode ?? 0;
-        final retryable = code == 0 || code == 429 || code >= 500;
-        if (!retryable || attempt == 2) {
+        final retryable = code == 0 || code == 408 || code == 429 || code >= 500;
+        if (!retryable || attempt == 4) {
           throw StateError(publicDioError(error));
         }
-        await Future<void>.delayed(Duration(seconds: 1 << attempt));
+        await Future<void>.delayed(Duration(seconds: 2 << attempt.clamp(0, 3)));
+      } catch (error) {
+        lastError = error;
+        if (attempt == 4) rethrow;
+        await Future<void>.delayed(Duration(seconds: 2 << attempt.clamp(0, 3)));
       }
     }
     throw StateError('$lastError');

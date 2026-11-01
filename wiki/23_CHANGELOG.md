@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.22 — 2026-11-01
+
+Home semplificata e archivio automatico.
+
+- Home a pannelli colorati; Ticket/Extra/Lab/SE si sbloccano quando l’archivio è pronto.
+- Scarico archivio automatico all’avvio e al ritorno in app, con più tentativi se lo ZIP tarda.
+- Aggiorna/importa file solo in **Extra** (Gestione archivio), non in bella vista sulla Home.
+
 ## 0.5.21 — 2026-11-01
 
 Ritocco grafico Ticket e menu.

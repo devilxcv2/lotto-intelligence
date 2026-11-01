@@ -90,9 +90,22 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
     if (state != AppLifecycleState.resumed) return;
     ref.invalidate(archiveSummaryProvider);
     ref.invalidate(wheelDrawsProvider);
+    unawaited(_ensureArchives());
     unawaited(_evaluateTickets(showPopup: true));
     unawaited(_ensureAutoStudy());
     unawaited(_tick());
+  }
+
+  /// Archivio Lotto (e SE) sempre in automatico: scarica e ritenta se in ritardo.
+  Future<void> _ensureArchives() async {
+    try {
+      await ref.read(archiveSyncProvider.notifier).ensureFresh();
+    } catch (_) {}
+    if (!ref.read(superenalottoSyncProvider).running) {
+      try {
+        await ref.read(superenalottoSyncProvider.notifier).syncLatest();
+      } catch (_) {}
+    }
   }
 
   Future<void> _evaluateTickets({required bool showPopup}) async {
@@ -191,6 +204,7 @@ class _LiveSyncHostState extends ConsumerState<LiveSyncHost> with WidgetsBinding
       if (!_bootstrapped) {
         _bootstrapped = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          unawaited(_ensureArchives());
           unawaited(_ensureAutoStudy());
           unawaited(_evaluateTickets(showPopup: true));
         });

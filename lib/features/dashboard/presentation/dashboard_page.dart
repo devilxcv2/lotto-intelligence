@@ -5,19 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_theme.dart';
-import '../../../core/background/evening_sync.dart';
 import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_controller.dart';
-import '../../../features/virtual_wallet/data/wallet_repository.dart';
-import '../../../features/virtual_wallet/presentation/wallet_pages.dart';
-import '../../../features/backtesting/data/backtest_repository.dart';
 import '../../../features/draws/data/archive_sync.dart';
 import '../../../features/draws/data/draw_repository.dart';
 import '../../../features/statistics/data/statistics_providers.dart';
 import '../../../features/statistics/domain/statistics_engine.dart';
-import '../../../features/systems/data/strategy_repository.dart';
+import '../../../features/superenalotto/presentation/se_chrome.dart';
+import '../../../features/virtual_wallet/data/wallet_repository.dart';
 import '../../../shared/widgets/common_widgets.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -27,236 +24,405 @@ class DashboardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(archiveSummaryProvider);
     final settings = ref.watch(settingsControllerProvider).value;
+    final sync = ref.watch(archiveSyncProvider);
+    final wallet = ref.watch(walletSummaryProvider).value;
     final wheel = settings?.selectedWheelCode ?? 'BA';
-    final draws = ref.watch(wheelDrawsProvider(wheel));
-    final strategies = ref.watch(strategiesProvider);
-    final backtests = ref.watch(backtestsProvider);
-    return PageScaffold(
-      title: 'Lotto Intelligence',
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-        children: [
-          AsyncBody<ArchiveSummary>(
-            value: summary,
-            onRetry: () => ref.invalidate(archiveSummaryProvider),
-            data: (data) => _SummaryCard(summary: data),
-          ),
-          const SizedBox(height: 16),
-          const _StudyCard(),
-          const SizedBox(height: 16),
-          const SectionCard(title: 'Ruota', child: WheelSelector()),
-          const SizedBox(height: 16),
-          AsyncBody<List<ArchivedDraw>>(
-            value: draws,
-            onRetry: () => ref.invalidate(wheelDrawsProvider(wheel)),
-            data: (items) => _WheelPreview(wheel: wheel, draws: items),
-          ),
-          const SizedBox(height: 16),
-          SectionCard(
-            title: 'Laboratorio',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final ready = summary.maybeWhen(
+      data: (data) => data.latestDate != null,
+      orElse: () => false,
+    );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F9FC),
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 980),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
               children: [
-                Text(
-                  strategies.hasValue || backtests.hasValue
-                      ? '${strategies.value?.length ?? 0} strategie · ${backtests.value?.length ?? 0} report. '
-                          'Apri Lab in basso per sistemi, Zoppe e AI.'
-                      : 'Sistemi, Zoppe, backtest e AI: tutto nella scheda Lab.',
+                _HomeHero(
+                  settings: settings,
+                  wallet: wallet,
+                  sync: sync,
+                  summary: summary.value,
                 ),
-                const SizedBox(height: 12),
-                FilledButton.tonalIcon(
-                  onPressed: () => context.go('/lab'),
-                  icon: const Icon(Icons.science_outlined),
-                  label: const Text('Apri laboratorio'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Text(
+                    ready ? 'Scegli dove andare' : 'L\'archivio si aggiorna da solo. Poi si sbloccano i pannelli.',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 1.15,
+                    children: [
+                      _ColorTile(
+                        title: 'Ticket',
+                        subtitle: ready ? 'Crea e storico' : 'Serve l\'archivio',
+                        icon: Icons.confirmation_number_rounded,
+                        colors: const [Color(0xFF1B4E8C), Color(0xFF2F6EAD)],
+                        locked: !ready,
+                        onTap: () => context.go('/tickets'),
+                      ),
+                      _ColorTile(
+                        title: 'Soldi',
+                        subtitle: wallet == null
+                            ? 'Credito e budget'
+                            : formatEuro(
+                                (settings?.virtualCapitalCents ?? 0) +
+                                    wallet.balanceCents +
+                                    wallet.seBalanceCents -
+                                    wallet.totalOpenStakeCents,
+                              ),
+                        icon: Icons.account_balance_wallet_rounded,
+                        colors: const [Color(0xFFC8962E), Color(0xFFF0A01A)],
+                        locked: false,
+                        onTap: () => context.go('/budget'),
+                      ),
+                      _ColorTile(
+                        title: 'Extra',
+                        subtitle: ready
+                            ? 'Estrazioni e ruote'
+                            : 'Archivio in aggiornamento',
+                        icon: Icons.bolt_rounded,
+                        colors: const [Color(0xFFD47812), Color(0xFFE8A03A)],
+                        locked: !ready,
+                        onTap: () => context.go('/draws'),
+                      ),
+                      _ColorTile(
+                        title: 'Lab',
+                        subtitle: ready ? 'Sistemi e Zoppe' : 'Dopo l\'archivio',
+                        icon: Icons.auto_awesome_rounded,
+                        colors: const [Color(0xFF5B3A8C), Color(0xFF7A5AF0)],
+                        locked: !ready,
+                        onTap: () => context.go('/lab'),
+                      ),
+                      _ColorTile(
+                        title: 'SuperEnalotto',
+                        subtitle: ready ? 'Studio e catalogo' : 'Dopo l\'archivio',
+                        icon: Icons.stars_rounded,
+                        colors: const [SeColors.forestDeep, SeColors.mint],
+                        locked: !ready,
+                        onTap: () => context.push('/more/se'),
+                      ),
+                      _ColorTile(
+                        title: 'Più',
+                        subtitle: 'Impostazioni e info',
+                        icon: Icons.grid_view_rounded,
+                        colors: const [Color(0xFF334155), Color(0xFF64748B)],
+                        locked: false,
+                        onTap: () => context.go('/more'),
+                      ),
+                    ],
+                  ),
+                ),
+                if (ready) ...[
+                  const SizedBox(height: 18),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _LatestStrip(wheel: wheel),
+                  ),
+                ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                  child: Text(
+                    'L\'archivio ufficiale si scarica in automatico. Per forzare o importare un file: Extra → icona aggiorna / Archivio.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.ink.withValues(alpha: 0.55),
+                          height: 1.35,
+                        ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => context.push('/draws/archive'),
+                    child: const Text('Apri gestione archivio'),
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _SummaryCard extends ConsumerWidget {
-  const _SummaryCard({required this.summary});
+class _HomeHero extends StatelessWidget {
+  const _HomeHero({
+    required this.settings,
+    required this.wallet,
+    required this.sync,
+    required this.summary,
+  });
 
-  final ArchiveSummary summary;
+  final AppSettings? settings;
+  final WalletSummary? wallet;
+  final ArchiveSyncState sync;
+  final ArchiveSummary? summary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sync = ref.watch(archiveSyncProvider);
-    return SectionCard(
-      title: 'Archivio',
-      trailing: Text(freshnessLabel(summary.freshness)),
+  Widget build(BuildContext context) {
+    final next = nextOpenDrawDate(DateTime.now());
+    final freshness = summary?.freshness;
+    final statusText = sync.running
+        ? (sync.message ?? 'Aggiorno l\'archivio…')
+        : switch (freshness) {
+            SourceFreshness.updated => 'Archivio aggiornato',
+            SourceFreshness.delayed => 'Cerco l\'estrazione più recente…',
+            SourceFreshness.unavailable => 'Archivio non ancora pronto',
+            SourceFreshness.unverified => 'Verifico l\'archivio…',
+            null => sync.error != null ? 'Riprovo in automatico' : 'Preparazione archivio…',
+          };
+    final statusColor = sync.running
+        ? AppColors.ballGold
+        : switch (freshness) {
+            SourceFreshness.updated => const Color(0xFF7DFFB3),
+            SourceFreshness.delayed => AppColors.ballGold,
+            _ => Colors.white70,
+          };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF122B4A), Color(0xFF1B4E8C), Color(0xFF2F6EAD)],
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(summary.latestDate == null ? 'Nessuna estrazione in archivio.' : 'Ultima data: ${formatItalianDate(summary.latestDate!)}'),
-          const SizedBox(height: 4),
-          Text('${summary.drawCount} cinquine locali. Il numero di concorso non è nel file ufficiale.'),
-          const SizedBox(height: 4),
-          const Text('Le righe non sono marcate come ufficialmente verificate: manca un confronto con una seconda fonte.'),
-          if (summary.httpLastModified != null) Text('Ultima modifica dichiarata dal file: ${summary.httpLastModified}'),
-          if (summary.lastError != null) Text(summary.lastError!),
-          if (sync.message != null) ...[
-            const SizedBox(height: 8),
-            Text(sync.message!),
-            if (sync.running) ...[
-              const SizedBox(height: 8),
-              LinearProgressIndicator(value: sync.progress == 0 ? null : sync.progress),
-            ],
-          ],
-          if (sync.error != null) Text(sync.error!),
-          if (sync.report != null)
-            Text('Inserite ${sync.report!.inserted}, duplicati ${sync.report!.duplicates}, conflitti ${sync.report!.conflicts}, non valide ${sync.report!.invalid}.'),
-          if (sync.evaluatedTickets.isNotEmpty)
-            Text(
-              'Schedine confrontate con le nuove estrazioni: ${sync.evaluatedTickets.length}, netto simulato '
-              '${formatEuro(sync.evaluatedTickets.fold<int>(0, (sum, t) => sum + (t.evaluation?.netCents ?? 0)))}.',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+          const Text(
+            'Lotto Intelligence',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'serif',
+              height: 1.05,
             ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton(
-                onPressed: sync.running ? null : () => ref.read(archiveSyncProvider.notifier).syncOfficial(),
-                child: const Text('Aggiorna archivio'),
-              ),
-              if (sync.running)
-                OutlinedButton(onPressed: () => ref.read(archiveSyncProvider.notifier).cancel(), child: const Text('Annulla')),
-            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Stato dello studio in tempo reale: prossimo concorso, schedine in attesa,
-/// ultimo esito e saldo simulato.
-class _StudyCard extends ConsumerWidget {
-  const _StudyCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(walletSummaryProvider).value;
-    final tickets = ref.watch(ticketsProvider).value ?? const <StoredTicket>[];
-    final settings = ref.watch(settingsControllerProvider).value;
-    final now = DateTime.now();
-    final next = nextOpenDrawDate(now);
-    final check = EveningSync.nextCheckTime(now);
-    final lastEvaluated = tickets.where((t) => t.evaluation != null && !t.isLegacy).toList()
-      ..sort((a, b) => b.evaluation!.evaluatedAt.compareTo(a.evaluation!.evaluatedAt));
-    final balance = summary?.balanceCents ?? 0;
-    final balanceColor = balance > 0 ? AppColors.gold : (balance < 0 ? Theme.of(context).colorScheme.error : null);
-    return SectionCard(
-      title: 'Studio in tempo reale',
-      trailing: summary == null
-          ? null
-          : Text(
-              '${balance > 0 ? '+' : ''}${formatEuro(balance)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: balanceColor, fontWeight: FontWeight.w700),
-            ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Prossimo concorso: ${formatItalianDate(next)}. '
-              'Raccolta fino alle $salesCloseHour:${salesCloseMinute.toString().padLeft(2, '0')}; '
-              'risultati tipici verso le $typicalResultsHour:${typicalResultsMinute.toString().padLeft(2, '0')} (non subito). '
-              '${(settings?.liveSyncEnabled ?? true) ? 'ZIP automatico dalle ${check.hour}:${check.minute.toString().padLeft(2, '0')} del ${formatItalianDate(check)}.' : 'Aggiornamento serale spento: attivalo in Impostazioni.'}'),
           const SizedBox(height: 6),
-          if (summary != null)
-            Text('${summary.openCount} schedine in attesa (${formatEuro(summary.openStakeCents)}), ${summary.evaluatedCount} valutate, '
-                'giocato ${formatEuro(summary.stakedCents)}, netto ${formatEuro(summary.netCents)}.'),
-          if (lastEvaluated.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Builder(builder: (context) {
-              final last = lastEvaluated.first;
-              final result = last.evaluation!;
-              return Text(
-                'Ultimo esito (${result.drawDate == null ? '—' : formatItalianDate(result.drawDate!)}, ${last.coversAllWheels ? 'tutte' : last.wheelCode}): '
-                '${result.hits} centri, netto ${formatEuro(result.netCents)} su ${formatEuro(last.stakeCents)}.',
-              );
-            }),
-          ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton.icon(
-                onPressed: () => context.push(newTicketRoute(wheel: settings?.selectedWheelCode)),
-                icon: const Icon(Icons.add),
-                label: const Text('Nuova schedina'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: () => context.go('/tickets'),
-                icon: const Icon(Icons.receipt_long_outlined),
-                label: const Text('Schedine'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/lab/zoppe'),
-                icon: const Icon(Icons.hub_outlined),
-                label: const Text('Zoppe'),
-              ),
-            ],
+          Text(
+            'Prossimo concorso ${formatItalianDate(next)}',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.88)),
           ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            ),
+            child: Row(
+              children: [
+                if (sync.running)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ballGold),
+                  )
+                else
+                  Icon(Icons.cloud_done_outlined, size: 18, color: statusColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    statusText,
+                    style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                ),
+                if (summary?.latestDate != null)
+                  Text(
+                    formatItalianDate(summary!.latestDate!),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                  ),
+              ],
+            ),
+          ),
+          if (sync.running) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: sync.progress == 0 ? null : sync.progress,
+                minHeight: 3,
+                backgroundColor: Colors.white24,
+                color: AppColors.ballGold,
+              ),
+            ),
+          ],
+          if (wallet case final w?) ...[
+            const SizedBox(height: 12),
+            Text(
+              '${w.openCount + w.seOpenCount} schedine in attesa · saldo Lotto '
+              '${w.balanceCents >= 0 ? '+' : ''}${formatEuro(w.balanceCents)}',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 12.5),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _WheelPreview extends ConsumerWidget {
-  const _WheelPreview({required this.wheel, required this.draws});
+class _ColorTile extends StatelessWidget {
+  const _ColorTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.colors,
+    required this.locked,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<Color> colors;
+  final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: locked
+            ? () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Si sblocca quando l\'archivio è pronto (aggiornamento automatico).')),
+                );
+              }
+            : onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: locked
+                  ? [colors.first.withValues(alpha: 0.45), colors.last.withValues(alpha: 0.35)]
+                  : colors,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(icon, color: Colors.white.withValues(alpha: locked ? 0.55 : 1), size: 26),
+                    const Spacer(),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: locked ? 0.7 : 1),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white.withValues(alpha: locked ? 0.55 : 0.85), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              if (locked)
+                const Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Icon(Icons.lock_outline, color: Colors.white70, size: 18),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LatestStrip extends ConsumerWidget {
+  const _LatestStrip({required this.wheel});
 
   final String wheel;
-  final List<ArchivedDraw> draws;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (draws.isEmpty) {
-      return SectionCard(
-        title: wheelByCode(wheel)?.name ?? wheel,
-        child: const Text('Nessuna cinquina per questa ruota. Dopo l\'importazione compariranno numeri, frequenze e ritardi.'),
-      );
-    }
-    final latest = draws.last;
-    final statistics = ref.watch(wheelStatisticsProvider((wheel: wheel, window: null)));
-    return SectionCard(
-      title: '${wheelByCode(wheel)?.name ?? wheel} · ${formatItalianDate(latest.date)}',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          NumberBalls(numbers: latest.numbers),
-          const SizedBox(height: 12),
-          Text('${draws.length} estrazioni in archivio per questa ruota.'),
-          const SizedBox(height: 8),
-          switch (statistics) {
-            AsyncData(:final value?) => _rankings(value),
-            AsyncError(:final error) => Text('Statistiche non disponibili: $error'),
-            _ => const LinearProgressIndicator(),
-          },
-          const SizedBox(height: 8),
-          const Text('Queste classifiche descrivono la finestra archiviata. Non indicano il prossimo estratto.'),
-        ],
-      ),
+    final draws = ref.watch(wheelDrawsProvider(wheel));
+    return draws.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        final latest = items.last;
+        final stats = ref.watch(wheelStatisticsProvider((wheel: wheel, window: 30)));
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${wheelByCode(wheel)?.name ?? wheel} · ${formatItalianDate(latest.date)}',
+                      style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.navy),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go('/draws'),
+                    child: const Text('Tutte'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              NumberBalls(numbers: latest.numbers),
+              const SizedBox(height: 8),
+              switch (stats) {
+                AsyncData(:final value?) => Text(
+                    _topLine(value),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                _ => const SizedBox.shrink(),
+              },
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _rankings(WheelStatistics stats) {
+  String _topLine(WheelStatistics stats) {
     final delays = [...stats.numbers]..sort((a, b) => b.currentDelay.compareTo(a.currentDelay));
-    final frequent = [...stats.numbers]..sort((a, b) => b.absoluteFrequency.compareTo(a.absoluteFrequency));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Ritardi correnti più lunghi: ${delays.take(3).map((item) => '${item.number} (${item.currentDelay})').join(', ')}.'),
-        Text('Frequenze più alte: ${frequent.take(3).map((item) => '${item.number} (${item.absoluteFrequency})').join(', ')}.'),
-      ],
-    );
+    return 'Ritardi più lunghi: ${delays.take(3).map((n) => '${n.number} (${n.currentDelay})').join(', ')}.';
   }
 }
-

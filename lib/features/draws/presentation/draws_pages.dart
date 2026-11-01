@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../core/lotto/draw_validation.dart';
+import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../../superenalotto/data/superenalotto_sync.dart';
@@ -86,6 +87,7 @@ class _LottoDraws extends ConsumerWidget {
             );
           }
           final day = ref.watch(_dayProvider(dateOnlyUtc(data.latestDate!)));
+          final sync = ref.watch(archiveSyncProvider);
           return ListView(
             children: [
               day.when(
@@ -109,14 +111,50 @@ class _LottoDraws extends ConsumerWidget {
               ),
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text('Tutte le ruote', style: TextStyle(fontWeight: FontWeight.w700)),
+                child: Text('Gestione archivio', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-              const _WheelList(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'L\'aggiornamento parte da solo all\'apertura dell\'app. Qui puoi forzarlo o importare un file.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.cloud_download_outlined, color: sync.running ? AppColors.banner : AppColors.navy),
+                title: Text(sync.running ? 'Aggiornamento in corso…' : 'Aggiorna archivio ora'),
+                subtitle: Text(
+                  sync.running
+                      ? (sync.message ?? 'Scarico…')
+                      : (data.latestDate == null
+                          ? 'Nessuna estrazione locale'
+                          : 'Ultima: ${formatItalianDate(data.latestDate!)} · ${freshnessLabel(data.freshness)}'),
+                ),
+                trailing: sync.running
+                    ? IconButton(
+                        tooltip: 'Annulla',
+                        onPressed: () => ref.read(archiveSyncProvider.notifier).cancel(),
+                        icon: const Icon(Icons.close),
+                      )
+                    : const Icon(Icons.refresh),
+                onTap: sync.running ? null : () => ref.read(archiveSyncProvider.notifier).syncOfficial(),
+              ),
               ListTile(
                 leading: const Icon(Icons.file_open, color: AppColors.navy),
                 title: const Text('Importa un file'),
+                subtitle: const Text('ZIP o testo, se lo scarico automatico non basta'),
                 onTap: () => _import(context, ref),
               ),
+              ListTile(
+                leading: const Icon(Icons.schedule, color: AppColors.navy),
+                title: const Text('Calendario archivio'),
+                onTap: () => context.push('/draws/archive'),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text('Tutte le ruote', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              const _WheelList(),
             ],
           );
         },
@@ -185,7 +223,24 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
         error: (error, _) => Center(child: Text('$error')),
         data: (range) {
           if (range.last == null) {
-            return const Center(child: Text('Archivio vuoto.'));
+            final sync = ref.watch(archiveSyncProvider);
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Archivio vuoto. L\'app lo scarica da sola all\'avvio.'),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: sync.running ? null : () => ref.read(archiveSyncProvider.notifier).syncOfficial(),
+                      icon: const Icon(Icons.cloud_download_outlined),
+                      label: Text(sync.running ? 'Scarico…' : 'Aggiorna ora'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           final last = range.last!.toUtc();
           final selected = _month ?? DateTime.utc(last.year, last.month);

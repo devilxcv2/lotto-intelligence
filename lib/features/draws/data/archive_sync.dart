@@ -3,6 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/lotto/archive_parser.dart';
+import '../../../core/lotto/freshness.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../statistics/data/statistics_providers.dart';
 import '../../virtual_wallet/data/wallet_repository.dart';
@@ -30,6 +31,30 @@ class ArchiveSyncController extends Notifier<ArchiveSyncState> {
       provenance: OfficialArchiveLocations.archiveUrl,
       load: () => service.downloadOfficial(onProgress: _progress),
     );
+  }
+
+  /// All'avvio e al ritorno in primo piano: scarica se l'archivio manca o è in ritardo,
+  /// con nuovi tentativi se lo ZIP non è ancora aggiornato.
+  Future<bool> ensureFresh({int rounds = 3}) async {
+    if (state.running) return false;
+    final before = await ref.read(drawRepositoryProvider).summary();
+    final needs = before.latestDate == null ||
+        before.freshness == SourceFreshness.delayed ||
+        before.freshness == SourceFreshness.unavailable ||
+        before.freshness == SourceFreshness.unverified;
+    if (!needs) return false;
+
+    for (var round = 0; round < rounds; round++) {
+      if (state.running) return true;
+      await syncOfficial();
+      final after = await ref.read(drawRepositoryProvider).summary();
+      final ok = after.latestDate != null && after.freshness == SourceFreshness.updated;
+      if (ok) return true;
+      if (round < rounds - 1) {
+        await Future<void>.delayed(Duration(seconds: 3 + round * 4));
+      }
+    }
+    return true;
   }
 
   Future<void> importPicked({required String filename, required List<int> bytes}) {

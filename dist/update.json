@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.21",
-  "versionCode": 29,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.21/app-release.apk",
-  "notes": "Ritocco grafico Ticket: hub, crea, storico e stats più chiari.",
+  "versionName": "0.5.22",
+  "versionCode": 30,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.22/app-release.apk",
+  "notes": "Home a pannelli sbloccabili; archivio automatico con retry; download manuale solo in Extra.",
   "releases": [
+    {
+      "versionName": "0.5.22",
+      "versionCode": 30,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.22/app-release.apk",
+      "notes": "Home chiara, sync automatica archivio, manuale in Extra."
+    },
     {
       "versionName": "0.5.21",
       "versionCode": 29,
@@ -20,13 +26,7 @@
       "versionName": "0.5.19",
       "versionCode": 27,
       "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.19/app-release.apk",
-      "notes": "Rigioca, budget SE su G3/G4/G5, stime euro Sisal, Soldi e posta minima Lotto."
-    },
-    {
-      "versionName": "0.5.18",
-      "versionCode": 26,
-      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.18/app-release.apk",
-      "notes": "Tutte le tipologie della bacheca Sisal in studio."
+      "notes": "Rigioca, budget SE, stime euro, Soldi, posta minima."
     }
   ]
 }
