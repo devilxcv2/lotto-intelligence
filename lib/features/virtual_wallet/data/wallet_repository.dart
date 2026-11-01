@@ -11,6 +11,8 @@ import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/prize_table.dart';
 import '../../../core/lotto/wheel_catalog.dart';
 import '../../../core/settings/app_settings.dart';
+import '../../superenalotto/domain/se_prize_estimates.dart';
+import '../../superenalotto/domain/superenalotto_studio.dart';
 import '../domain/auto_study.dart';
 
 class BudgetDecision {
@@ -97,6 +99,12 @@ class WalletSummary {
     required this.winningTickets,
     required this.bestNetCents,
     required this.timeline,
+    this.seOpenCount = 0,
+    this.seOpenStakeCents = 0,
+    this.seEvaluatedCount = 0,
+    this.seStakedCents = 0,
+    this.seEstimatedWinCents = 0,
+    this.seWinningTickets = 0,
   });
 
   final int openCount;
@@ -114,7 +122,17 @@ class WalletSummary {
   /// Saldo cumulato (netto meno poste) dopo ogni schedina valutata.
   final List<({DateTime date, int balanceCents})> timeline;
 
+  /// SuperEnalotto di studio: 1 € a sestina.
+  final int seOpenCount;
+  final int seOpenStakeCents;
+  final int seEvaluatedCount;
+  final int seStakedCents;
+  final int seEstimatedWinCents;
+  final int seWinningTickets;
+
   int get balanceCents => netCents - stakedCents;
+  int get seBalanceCents => seEstimatedWinCents - seStakedCents;
+  int get totalOpenStakeCents => openStakeCents + seOpenStakeCents;
   double? get returnRatio => stakedCents == 0 ? null : netCents / stakedCents;
 }
 
@@ -185,12 +203,17 @@ class WalletRepository {
   Future<int> spentThisMonthCents(DateTime now) async {
     final start = DateTime.utc(now.year, now.month);
     final end = DateTime.utc(now.year, now.month + 1);
-    final row = await _db.customSelect(
+    final lotto = await _db.customSelect(
       'SELECT COALESCE(SUM(stake_cents), 0) AS s FROM virtual_tickets WHERE created_at >= ? AND created_at < ?',
       variables: [Variable.withDateTime(start), Variable.withDateTime(end)],
       readsFrom: {_db.virtualTickets},
     ).getSingle();
-    return row.read<int>('s');
+    final se = await _db.customSelect(
+      'SELECT COUNT(*) AS c FROM superenalotto_tickets WHERE created_at >= ? AND created_at < ?',
+      variables: [Variable.withDateTime(start), Variable.withDateTime(end)],
+      readsFrom: {_db.superenalottoTickets},
+    ).getSingle();
+    return lotto.read<int>('s') + se.read<int>('c') * 100;
   }
 
   /// Registra la schedina per il prossimo concorso aperto. Nessun acquisto.
@@ -357,6 +380,32 @@ class WalletRepository {
       running += ticket.evaluation!.netCents - ticket.stakeCents;
       timeline.add((date: ticket.targetDrawDate ?? ticket.createdAt, balanceCents: running));
     }
+    final seOpenRow = await _db.customSelect(
+      "SELECT COUNT(*) AS c FROM superenalotto_tickets WHERE status = 'open'",
+      readsFrom: {_db.superenalottoTickets},
+    ).getSingle();
+    final seOpenCount = seOpenRow.read<int>('c');
+    final seEvalRows = await _db.customSelect(
+      "SELECT t.id AS id, r.hits AS hits, r.jolly_matched AS jolly, r.superstar_matched AS star, r.category AS category "
+      "FROM superenalotto_tickets t "
+      "JOIN superenalotto_ticket_results r ON r.ticket_id = t.id "
+      "WHERE t.status = 'evaluated'",
+      readsFrom: {_db.superenalottoTickets, _db.superenalottoTicketResults},
+    ).get();
+    var seEstimated = 0;
+    var seWins = 0;
+    for (final row in seEvalRows) {
+      final match = SeMatch(
+        hits: row.read<int>('hits'),
+        jollyMatched: row.read<int>('jolly') != 0,
+        superstarMatched: row.read<int>('star') != 0,
+        category: row.read<String>('category'),
+      );
+      final estimate = estimateSeWin(match);
+      if (estimate.isJackpot || estimate.estimatedCents > 0) seWins++;
+      seEstimated += estimate.estimatedCents;
+    }
+
     return WalletSummary(
       openCount: openCount,
       evaluatedCount: evaluatedCount,
@@ -368,6 +417,12 @@ class WalletRepository {
       winningTickets: winners,
       bestNetCents: best,
       timeline: timeline,
+      seOpenCount: seOpenCount,
+      seOpenStakeCents: seOpenCount * seCombinationCostCents,
+      seEvaluatedCount: seEvalRows.length,
+      seStakedCents: seEvalRows.length * seCombinationCostCents,
+      seEstimatedWinCents: seEstimated,
+      seWinningTickets: seWins,
     );
   }
 

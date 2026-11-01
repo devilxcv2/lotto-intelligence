@@ -9,9 +9,11 @@ import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_controller.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../../superenalotto/data/se_ticket_repository.dart';
+import '../../superenalotto/domain/se_prize_estimates.dart';
 import '../../superenalotto/domain/superenalotto_studio.dart';
 import '../data/wallet_repository.dart';
 import '../domain/study_review.dart';
+import 'wallet_pages.dart';
 
 /// Scheda dedicata: credito, budget, vincite e perché le giocate (Zoppe ecc.) non hanno “funzionato”.
 class BudgetBoardPage extends ConsumerWidget {
@@ -56,7 +58,7 @@ class BudgetBoardPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Budget, credito e vincite simulate. Sotto: cosa hanno centrato Zoppe e le altre strategie.',
+                      'Un solo posto per credito, Lotto e SuperEnalotto. Niente acquisti reali.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 16),
@@ -66,7 +68,9 @@ class BudgetBoardPage extends ConsumerWidget {
                       settings: settings,
                       summary: data,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 18),
+                    const _SectionLabel('Lotto'),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
@@ -95,10 +99,70 @@ class BudgetBoardPage extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 18),
+                    const _SectionLabel('SuperEnalotto'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MiniStat(
+                            label: 'In attesa',
+                            value: formatEuro(data.seOpenStakeCents),
+                            hint: '${data.seOpenCount} × 1 €',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _MiniStat(
+                            label: 'Stima vinto',
+                            value: formatEuro(data.seEstimatedWinCents),
+                            hint: '${data.seWinningTickets} categorie',
+                            highlight: data.seEstimatedWinCents > 0,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _MiniStat(
+                            label: 'Giocato',
+                            value: formatEuro(data.seStakedCents),
+                            hint: '${data.seEvaluatedCount} valutate',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const _SePrizeGuideCard(),
                     if (settings != null) ...[
                       const SizedBox(height: 12),
                       _BudgetStrip(settings: settings, summary: data),
                     ],
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () => context.push(newTicketRoute(wheel: settings?.selectedWheelCode)),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Nuova Lotto'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => context.push('/more/se/studio'),
+                          icon: const Icon(Icons.stars_outlined),
+                          label: const Text('Nuova SE'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => context.go('/tickets'),
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          label: const Text('Schedine'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => context.push('/more/se/tickets'),
+                          icon: const Icon(Icons.list_alt),
+                          label: const Text('Catalogo SE'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 20),
                     ResultsBanner('Per metodo: chi ha reso (o no)'),
                     const SizedBox(height: 8),
@@ -128,26 +192,9 @@ class BudgetBoardPage extends ConsumerWidget {
                         child: Text(line, style: Theme.of(context).textTheme.bodySmall),
                       ),
                     const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.tonalIcon(
-                          onPressed: () => context.go('/tickets'),
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Schedine'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () => context.push('/more/wallet'),
-                          icon: const Icon(Icons.tune),
-                          label: const Text('Limiti budget'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () => context.push('/more/se/tickets'),
-                          icon: const Icon(Icons.stars_outlined),
-                          label: const Text('Catalogo SE'),
-                        ),
-                      ],
+                    TextButton(
+                      onPressed: () => context.push('/more/wallet'),
+                      child: const Text('Apri limiti budget e grafico saldo'),
                     ),
                   ],
                 );
@@ -155,6 +202,56 @@ class BudgetBoardPage extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.navy, letterSpacing: 0.2),
+    );
+  }
+}
+
+class _SePrizeGuideCard extends StatelessWidget {
+  const _SePrizeGuideCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F8F1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFC5D9C0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quanto avrei vinto (SE)',
+            style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1B5E3B)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            sePrizeGuideLines(),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.4),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Le stime compaiono sulle schedine del catalogo SE dopo il concorso.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+          ),
+        ],
       ),
     );
   }
@@ -198,14 +295,19 @@ class _CreditHero extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Saldo schedine valutate: ${balanceCents >= 0 ? '+' : ''}${formatEuro(balanceCents)}'
-            '${summary.openStakeCents > 0 ? ' · in attesa ${formatEuro(summary.openStakeCents)}' : ''}',
+            'Lotto valutato: ${balanceCents >= 0 ? '+' : ''}${formatEuro(balanceCents)}'
+            '${summary.openStakeCents > 0 ? ' · Lotto in attesa ${formatEuro(summary.openStakeCents)}' : ''}',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          Text(
+            'SE stima: ${summary.seBalanceCents >= 0 ? '+' : ''}${formatEuro(summary.seBalanceCents)}'
+            '${summary.seOpenStakeCents > 0 ? ' · SE in attesa ${formatEuro(summary.seOpenStakeCents)}' : ''}',
             style: const TextStyle(color: Colors.white70),
           ),
           if (settings != null) ...[
             const SizedBox(height: 4),
             Text(
-              'Capitale di partenza ${formatEuro(settings!.virtualCapitalCents)} · ${settings!.budgetMode.label}',
+              'Capitale ${formatEuro(settings!.virtualCapitalCents)} · ${settings!.budgetMode.label} · in gioco tot. ${formatEuro(summary.totalOpenStakeCents)}',
               style: const TextStyle(color: Colors.white60, fontSize: 12),
             ),
           ],
@@ -272,7 +374,10 @@ class _BudgetStrip extends StatelessWidget {
             const Text('Budget con limiti', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text('Concorso max ${formatEuro(settings.contestBudgetCents)} · mese ${formatEuro(settings.monthlyBudgetCents)}'),
-            Text('In attesa ora: ${formatEuro(summary.openStakeCents)}'),
+            Text(
+              'In attesa: Lotto ${formatEuro(summary.openStakeCents)} · SE ${formatEuro(summary.seOpenStakeCents)} '
+              '(tot. ${formatEuro(summary.totalOpenStakeCents)})',
+            ),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(onPressed: () => context.push('/more/wallet'), child: const Text('Modifica')),

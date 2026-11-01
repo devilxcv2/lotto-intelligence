@@ -180,5 +180,5 @@ int simulatedCreditCents({
   required AppSettings settings,
   required WalletSummary summary,
 }) {
-  return settings.virtualCapitalCents + summary.balanceCents - summary.openStakeCents;
+  return settings.virtualCapitalCents + summary.balanceCents + summary.seBalanceCents - summary.totalOpenStakeCents;
 }

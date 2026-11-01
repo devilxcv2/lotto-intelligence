@@ -70,6 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       for (final part in (state.uri.queryParameters['numbers'] ?? '').split(',')) ?int.tryParse(part.trim()),
                     ],
                     initialWheel: state.uri.queryParameters['wheel'],
+                    initialStakes: stakesFromQuery(state.uri.queryParameters['stakes']),
                   ),
                 ),
                 GoRoute(

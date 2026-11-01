@@ -7,10 +7,15 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/lotto/freshness.dart';
 import '../../../core/lotto/wheel_catalog.dart';
+import '../../../core/settings/app_settings.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../../systems/domain/combinations.dart';
+import '../../virtual_wallet/data/wallet_repository.dart';
 import '../data/se_ticket_repository.dart';
 import '../data/superenalotto_repository.dart';
+import '../domain/se_prize_estimates.dart';
+import '../domain/se_register.dart';
 import '../domain/superenalotto_studio.dart';
 import 'se_chrome.dart';
 
@@ -82,21 +87,64 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
       setState(() => _message = problem);
       return;
     }
-    try {
-      await ref.read(seTicketRepositoryProvider).add(numbers: numbers, superstar: star, origin: origin ?? _origin);
-      ref.invalidate(seTicketsProvider);
-      if (!mounted) return;
-      final when = formatItalianDate(nextOpenDrawDate(DateTime.now()));
-      setState(() => _message = 'Schedina registrata per il $when. La trovi nel catalogo SuperEnalotto (categoria, non euro).');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Registrata per il $when'),
-          action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
-        ),
-      );
-    } catch (error) {
-      if (mounted) setState(() => _message = '$error');
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings == null) {
+      setState(() => _message = 'Impostazioni non pronte.');
+      return;
     }
+    final outcome = await registerSeColumns(
+      columns: [numbers],
+      superstar: star,
+      origin: origin ?? _origin,
+      note: 'Schedina di studio · posta ${formatEuro(seCombinationCostCents)}.',
+      settings: settings,
+      wallet: ref.read(walletRepositoryProvider),
+      seTickets: ref.read(seTicketRepositoryProvider),
+    );
+    if (!mounted) return;
+    if (!outcome.ok) {
+      setState(() => _message = outcome.error);
+      return;
+    }
+    ref.invalidate(seTicketsProvider);
+    ref.invalidate(walletSummaryProvider);
+    final when = formatItalianDate(nextOpenDrawDate(DateTime.now()));
+    setState(() => _message = 'Schedina registrata per il $when (−${formatEuro(seCombinationCostCents)} di budget). Catalogo SE.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registrata per il $when · −${formatEuro(seCombinationCostCents)}'),
+        action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
+      ),
+    );
+  }
+
+  Future<void> _saveColumns(List<List<int>> columns, {required String origin}) async {
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings == null) {
+      setState(() => _message = 'Impostazioni non pronte.');
+      return;
+    }
+    final outcome = await registerSeColumns(
+      columns: columns,
+      origin: origin,
+      settings: settings,
+      wallet: ref.read(walletRepositoryProvider),
+      seTickets: ref.read(seTicketRepositoryProvider),
+    );
+    if (!mounted) return;
+    if (!outcome.ok) {
+      setState(() => _message = outcome.error);
+      return;
+    }
+    ref.invalidate(seTicketsProvider);
+    ref.invalidate(walletSummaryProvider);
+    setState(() => _message = 'Registrate ${outcome.saved} sestine (−${formatEuro(outcome.saved * seCombinationCostCents)}).');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${outcome.saved} sestine nel catalogo'),
+        action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
+      ),
+    );
   }
 
   void _develop() {
@@ -128,29 +176,10 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
   }
 
   Future<void> _saveAllPersonal(List<SeSuggestion> suggestions) async {
-    var ok = 0;
-    for (final suggestion in suggestions) {
-      try {
-        await ref.read(seTicketRepositoryProvider).add(
-              numbers: suggestion.numbers,
-              superstar: suggestion.superstar,
-              origin: 'Personalizzato · ${suggestion.name}',
-              note: 'Algoritmo sull\'archivio. Nessun acquisto reale.',
-            );
-        ok++;
-      } catch (_) {}
-    }
-    ref.invalidate(seTicketsProvider);
-    if (!mounted) return;
-    setState(() => _message = ok == 0 ? 'Nessuna schedina registrata.' : 'Registrate $ok schedine personalizzate nel catalogo.');
-    if (ok > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$ok schedine personalizzate'),
-          action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
-        ),
-      );
-    }
+    await _saveColumns(
+      [for (final suggestion in suggestions) suggestion.numbers],
+      origin: 'Personalizzato · archivio',
+    );
   }
 
   @override
@@ -192,7 +221,7 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
             children: [
               const SeHeroHeader(
                 title: 'Componi la giocata',
-                subtitle: 'Consigli dall\'archivio · categorie a montepremi, non euro.',
+                subtitle: '1,00 € di studio a sestina sul budget · dopo il concorso stima in euro dalle quote Sisal.',
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -308,7 +337,7 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
                       FilledButton(
                         style: FilledButton.styleFrom(backgroundColor: SeColors.forest),
                         onPressed: () => _save(_selected.toList()..sort()),
-                        child: const Text('Registra schedina'),
+                        child: Text('Registra (−${formatEuro(seCombinationCostCents)})'),
                       ),
                     if (_systemMode)
                       FilledButton(
@@ -330,13 +359,17 @@ class _SeStudioPageState extends ConsumerState<SeStudioPage> {
               if (_message != null)
                 Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: Text(_message!)),
               if (_system != null && _system!.combinations.isNotEmpty)
-                _SystemPreview(result: _system!, onSave: (row) => _save(row, origin: 'sistemone')),
+                _SystemPreview(
+                  result: _system!,
+                  onSaveFirst: (row) => _save(row, origin: 'sistemone'),
+                  onSaveAll: () => _saveColumns(_system!.combinations, origin: 'sistemone'),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                 child: OutlinedButton.icon(
                   onPressed: () => context.push('/more/se/tickets'),
                   icon: const Icon(Icons.receipt_long_outlined, color: SeColors.forest),
-                  label: const Text('Vedi catalogo schedine e categorie'),
+                  label: const Text('Vedi catalogo · categorie e stime in euro'),
                 ),
               ),
             ],
@@ -384,20 +417,26 @@ class _SuggestionBlock extends StatelessWidget {
 }
 
 class _SystemPreview extends StatelessWidget {
-  const _SystemPreview({required this.result, required this.onSave});
+  const _SystemPreview({
+    required this.result,
+    required this.onSaveFirst,
+    required this.onSaveAll,
+  });
 
   final GenerationResult result;
-  final ValueChanged<List<int>> onSave;
+  final ValueChanged<List<int>> onSaveFirst;
+  final VoidCallback onSaveAll;
 
   @override
   Widget build(BuildContext context) {
     final preview = result.combinations.take(6).toList();
+    final cost = result.combinations.length * seCombinationCostCents;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${result.combinations.length} colonne da 6. ${result.coverageClaim}'),
+          Text('${result.combinations.length} colonne da 6 · ${formatEuro(cost)} di studio. ${result.coverageClaim}'),
           const SizedBox(height: 4),
           Text(
             result.guaranteeVerified
@@ -408,7 +447,21 @@ class _SystemPreview extends StatelessWidget {
           for (final row in preview)
             Padding(padding: const EdgeInsets.only(top: 4), child: Text(row.join(' · '))),
           const SizedBox(height: 8),
-          OutlinedButton(onPressed: () => onSave(preview.first), child: const Text('Registra la prima colonna')),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: SeColors.forest),
+                onPressed: onSaveAll,
+                child: Text('Registra tutte (−${formatEuro(cost)})'),
+              ),
+              OutlinedButton(
+                onPressed: () => onSaveFirst(preview.first),
+                child: const Text('Solo la prima'),
+              ),
+            ],
+          ),
         ],
       ),
     );

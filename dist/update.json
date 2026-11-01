@@ -1,9 +1,15 @@
 {
-  "versionName": "0.5.18",
-  "versionCode": 26,
-  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.18/app-release.apk",
-  "notes": "Bacheca sistemi SE: Integrale, Ridotto, Basi/Varianti, Cruciverba, Multistella.",
+  "versionName": "0.5.19",
+  "versionCode": 27,
+  "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.19/app-release.apk",
+  "notes": "Rigioca schedine, G3/G4/G5 sul catalogo SE con budget, stime euro SE, Soldi rinnovato, posta minima 1 €.",
   "releases": [
+    {
+      "versionName": "0.5.19",
+      "versionCode": 27,
+      "apkUrl": "https://github.com/devilxcv2/lotto-intelligence/releases/download/v0.5.19/app-release.apk",
+      "notes": "Rigioca, budget SE su G3/G4/G5, stime euro Sisal, Soldi e posta minima Lotto."
+    },
     {
       "versionName": "0.5.18",
       "versionCode": 26,

@@ -71,6 +71,66 @@ class SeTicketRepository {
         ));
   }
 
+  /// Registra più sestine (es. sistema G5/G4/G3). Ogni colonna costa 1 € di studio.
+  Future<int> addMany({
+    required List<List<int>> columns,
+    int? superstar,
+    required String origin,
+    String? note,
+    DateTime? now,
+    int limit = 500,
+  }) async {
+    if (columns.isEmpty) return 0;
+    if (columns.length > limit) {
+      throw StateError('Al massimo $limit sestine in una registrazione. Riduci il sistema o registra a lotti.');
+    }
+    final clock = now ?? DateTime.now();
+    final target = nextOpenDrawDate(clock);
+    var saved = 0;
+    await _db.transaction(() async {
+      for (final column in columns) {
+        final sorted = [...column]..sort();
+        final problem = seTicketProblem(sorted, superstar: superstar);
+        if (problem != null) throw StateError(problem);
+        await _db.into(_db.superenalottoTickets).insert(SuperenalottoTicketsCompanion.insert(
+              n1: sorted[0],
+              n2: sorted[1],
+              n3: sorted[2],
+              n4: sorted[3],
+              n5: sorted[4],
+              n6: sorted[5],
+              superstar: Value(superstar),
+              targetDrawDate: target,
+              origin: Value(origin),
+              note: Value(note),
+              createdAt: clock.toUtc(),
+            ));
+        saved++;
+      }
+    });
+    return saved;
+  }
+
+  /// Posta simulata SE nel mese (1 € a schedina).
+  Future<int> spentThisMonthCents(DateTime now) async {
+    final start = DateTime.utc(now.year, now.month);
+    final end = DateTime.utc(now.year, now.month + 1);
+    final row = await _db.customSelect(
+      'SELECT COUNT(*) AS c FROM superenalotto_tickets WHERE created_at >= ? AND created_at < ?',
+      variables: [Variable.withDateTime(start), Variable.withDateTime(end)],
+      readsFrom: {_db.superenalottoTickets},
+    ).getSingle();
+    return row.read<int>('c') * 100;
+  }
+
+  Future<int> openStakeCents() async {
+    final row = await _db.customSelect(
+      "SELECT COUNT(*) AS c FROM superenalotto_tickets WHERE status = 'open'",
+      readsFrom: {_db.superenalottoTickets},
+    ).getSingle();
+    return row.read<int>('c') * 100;
+  }
+
   Future<List<SeTicket>> list() async {
     final tickets = await (_db.select(_db.superenalottoTickets)..orderBy([(row) => OrderingTerm.desc(row.id)])).get();
     final results = await _db.select(_db.superenalottoTicketResults).get();

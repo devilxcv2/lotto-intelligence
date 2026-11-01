@@ -9,8 +9,11 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/settings/settings_controller.dart';
+import '../../superenalotto/data/se_ticket_repository.dart';
+import '../../superenalotto/domain/se_register.dart';
 import '../../superenalotto/presentation/se_chrome.dart';
 import '../../superenalotto/presentation/se_studio_page.dart';
+import '../../virtual_wallet/data/wallet_repository.dart';
 import '../../virtual_wallet/presentation/wallet_pages.dart';
 import '../domain/combinations.dart';
 import '../domain/sisal_guarantee.dart';
@@ -31,6 +34,7 @@ class _SisalBoardPageState extends ConsumerState<SisalBoardPage> {
   final _pool = <int>{};
   var _stakeCents = seUnitCostCents;
   var _busy = false;
+  var _registering = false;
   String? _message;
   GenerationResult? _result;
 
@@ -56,6 +60,39 @@ class _SisalBoardPageState extends ConsumerState<SisalBoardPage> {
         _pool.add(n);
       }
     });
+  }
+
+  Future<void> _registerSeColumns() async {
+    final columns = _result?.combinations ?? const <List<int>>[];
+    if (!_se || columns.isEmpty) return;
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings == null) return;
+    setState(() {
+      _registering = true;
+      _message = null;
+    });
+    final outcome = await registerSeColumns(
+      columns: columns,
+      origin: 'Maschera · ${_guarantee.label}',
+      note: _result?.coverageClaim,
+      settings: settings,
+      wallet: ref.read(walletRepositoryProvider),
+      seTickets: ref.read(seTicketRepositoryProvider),
+    );
+    if (!mounted) return;
+    setState(() => _registering = false);
+    if (!outcome.ok) {
+      setState(() => _message = outcome.error);
+      return;
+    }
+    ref.invalidate(seTicketsProvider);
+    ref.invalidate(walletSummaryProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registrate ${outcome.saved} sestine SE (−${formatEuro(outcome.saved * 100)}).'),
+        action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
+      ),
+    );
   }
 
   Future<void> _develop() async {
@@ -231,22 +268,23 @@ class _SisalBoardPageState extends ConsumerState<SisalBoardPage> {
                     runSpacing: 8,
                     children: [
                       if (_se)
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(backgroundColor: brand),
+                          onPressed: _registering ? null : _registerSeColumns,
+                          icon: const Icon(Icons.save_alt),
+                          label: Text('Registra tutte (−${formatEuro(spend.totalCents)})'),
+                        ),
+                      if (_se)
                         OutlinedButton.icon(
-                          onPressed: () {
-                            final first = columns.first;
-                            context.push(seStudioRoute(numbers: first));
-                          },
+                          onPressed: () => context.push(seStudioRoute(numbers: columns.first)),
                           icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Prima colonna in schedina SE'),
+                          label: const Text('Prima in studio SE'),
                         )
                       else
                         OutlinedButton.icon(
-                          onPressed: () {
-                            final first = columns.first;
-                            context.push(newTicketRoute(numbers: first));
-                          },
+                          onPressed: () => context.push(newTicketRoute(numbers: columns.first)),
                           icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Prima colonna in schedina Lotto'),
+                          label: const Text('Prima in schedina Lotto'),
                         ),
                       TextButton(
                         onPressed: () => context.push('/more/wallet'),
@@ -262,19 +300,9 @@ class _SisalBoardPageState extends ConsumerState<SisalBoardPage> {
             brand: brand,
             combos: columns.length,
             totalCents: spend.totalCents,
-            enabled: columns.isNotEmpty && !_busy,
-            onNext: columns.isEmpty
-                ? null
-                : () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Studio: ${columns.length} colonne · ${formatEuro(spend.totalCents)}. '
-                          'Nessun pagamento inviato.',
-                        ),
-                      ),
-                    );
-                  },
+            enabled: columns.isNotEmpty && !_busy && !_registering,
+            se: _se,
+            onNext: _se ? _registerSeColumns : null,
           ),
         ],
       ),
@@ -288,6 +316,7 @@ class _FooterBar extends StatelessWidget {
     required this.combos,
     required this.totalCents,
     required this.enabled,
+    required this.se,
     required this.onNext,
   });
 
@@ -295,6 +324,7 @@ class _FooterBar extends StatelessWidget {
   final int combos;
   final int totalCents;
   final bool enabled;
+  final bool se;
   final VoidCallback? onNext;
 
   @override
@@ -314,7 +344,7 @@ class _FooterBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '$combos Comb',
+                      '$combos Comb${se ? ' · catalogo SE' : ''}',
                       style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
                     ),
                     Text(
@@ -326,11 +356,14 @@ class _FooterBar extends StatelessWidget {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: enabled ? brand : brand.withValues(alpha: 0.35),
-                  minimumSize: const Size(140, 48),
+                  backgroundColor: enabled && onNext != null ? brand : brand.withValues(alpha: 0.35),
+                  minimumSize: const Size(160, 48),
                 ),
                 onPressed: enabled ? onNext : null,
-                child: const Text('Avanti', style: TextStyle(fontWeight: FontWeight.w800)),
+                child: Text(
+                  se ? 'Registra' : 'Avanti',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
             ],
           ),

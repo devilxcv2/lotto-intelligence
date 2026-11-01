@@ -24,12 +24,31 @@ import '../domain/auto_study.dart';
 import '../domain/targeted_ticket.dart';
 
 /// Rotta della pagina «Nuova schedina», con numeri e ruota precompilati.
-String newTicketRoute({List<int>? numbers, String? wheel}) {
+String newTicketRoute({List<int>? numbers, String? wheel, Map<LottoSorte, int>? stakes}) {
   final query = <String>[
     if (numbers != null && numbers.isNotEmpty) 'numbers=${numbers.join(',')}',
     if (wheel != null) 'wheel=$wheel',
+    if (stakes != null && stakes.values.any((v) => v > 0))
+      'stakes=${[
+        for (final e in stakes.entries)
+          if (e.value > 0) '${e.key.name}-${e.value}',
+      ].join(',')}',
   ];
   return query.isEmpty ? '/tickets/new' : '/tickets/new?${query.join('&')}';
+}
+
+Map<LottoSorte, int> stakesFromQuery(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return const {};
+  final out = <LottoSorte, int>{};
+  for (final part in raw.split(',')) {
+    final bits = part.trim().split('-');
+    if (bits.length != 2) continue;
+    final sorte = LottoSorte.values.where((s) => s.name == bits[0]).firstOrNull;
+    final cents = int.tryParse(bits[1]);
+    if (sorte == null || cents == null || cents <= 0) continue;
+    out[sorte] = cents;
+  }
+  return out;
 }
 
 const String _noChaseNote = 'Capitale, poste e vincite sono simulati. Perdere è l\'esito atteso nel lungo periodo: '
@@ -64,15 +83,28 @@ class WalletPage extends ConsumerWidget {
               const SizedBox(height: 16),
             ],
             SectionCard(
-              title: 'Conteggi',
+              title: 'Lotto',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Row('Schedine in attesa', '${data.openCount} · posta ${formatEuro(data.openStakeCents)}'),
-                  _Row('Schedine valutate', '${data.evaluatedCount}'),
-                  _Row('Con vincita simulata', '${data.winningTickets}'),
+                  _Row('In attesa', '${data.openCount} · posta ${formatEuro(data.openStakeCents)}'),
+                  _Row('Valutate', '${data.evaluatedCount}'),
+                  _Row('Con vincita', '${data.winningTickets} · netto ${formatEuro(data.netCents)}'),
                   _Row('Miglior netto', formatEuro(data.bestNetCents)),
-                  if (data.legacyCount > 0) _Row('Schedine senza poste (versioni precedenti)', '${data.legacyCount}'),
+                  if (data.legacyCount > 0) _Row('Senza poste (vecchie)', '${data.legacyCount}'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionCard(
+              title: 'SuperEnalotto (studio)',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Row('In attesa', '${data.seOpenCount} · ${formatEuro(data.seOpenStakeCents)} (1 €/sestina)'),
+                  _Row('Valutate', '${data.seEvaluatedCount} · giocato ${formatEuro(data.seStakedCents)}'),
+                  _Row('Stima vincite', formatEuro(data.seEstimatedWinCents)),
+                  _Row('Categorie utili', '${data.seWinningTickets}'),
                 ],
               ),
             ),
@@ -84,14 +116,24 @@ class WalletPage extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilledButton.icon(
+                  onPressed: () => context.go('/budget'),
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  label: const Text('Soldi'),
+                ),
+                OutlinedButton.icon(
                   onPressed: () => context.go('/tickets'),
                   icon: const Icon(Icons.receipt_long_outlined),
-                  label: const Text('Schedine'),
+                  label: const Text('Schedine Lotto'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/more/se/tickets'),
+                  icon: const Icon(Icons.stars_outlined),
+                  label: const Text('Catalogo SE'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () => context.push(newTicketRoute(wheel: settings?.selectedWheelCode)),
                   icon: const Icon(Icons.add),
-                  label: const Text('Nuova schedina'),
+                  label: const Text('Nuova Lotto'),
                 ),
               ],
             ),
@@ -674,10 +716,16 @@ class _Ball extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class NewTicketPage extends ConsumerStatefulWidget {
-  const NewTicketPage({this.initialNumbers = const [], this.initialWheel, super.key});
+  const NewTicketPage({
+    this.initialNumbers = const [],
+    this.initialWheel,
+    this.initialStakes = const {},
+    super.key,
+  });
 
   final List<int> initialNumbers;
   final String? initialWheel;
+  final Map<LottoSorte, int> initialStakes;
 
   @override
   ConsumerState<NewTicketPage> createState() => _NewTicketPageState();
@@ -687,7 +735,11 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
   late final List<int> _numbers = [...widget.initialNumbers.where((n) => n >= 1 && n <= 90).toSet().take(maxTicketNumbers)];
   late String _wheel;
   var _appliedSettingsWheel = false;
-  final Map<LottoSorte, int> _stakes = {LottoSorte.ambo: 100};
+  late final Map<LottoSorte, int> _stakes = Map<LottoSorte, int>.from(
+    widget.initialStakes.values.any((v) => v > 0)
+        ? {for (final e in widget.initialStakes.entries) if (e.value > 0) e.key: e.value}
+        : {LottoSorte.ambo: 100},
+  );
   /// Se valorizzata: giocata mirata su una sola sorte (ambo/terno/…).
   LottoSorte? _targetSorte;
   var _mirataExtra = 0;
@@ -977,6 +1029,13 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                   'Minimo 1,00 €, massimo 200,00 €, passi di 0,50 €. Cap 6.000.000 €. Ritenuta 8% sul lordo.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+                if (draft.stakeCents < minTicketStakeCents) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Posta insufficiente: non puoi registrare a ${formatEuro(draft.stakeCents)}. Metti almeno ${formatEuro(minTicketStakeCents)} su una sorte.',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w700),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1008,9 +1067,15 @@ class _NewTicketPageState extends ConsumerState<NewTicketPage> {
                 ],
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: problem != null || _busy || settings == null ? null : () => _register(settings),
+                  onPressed: problem != null || draft.stakeCents < minTicketStakeCents || _busy || settings == null
+                      ? null
+                      : () => _register(settings),
                   icon: const Icon(Icons.save_alt),
-                  label: Text(_busy ? 'Registro…' : 'Registra schedina ipotetica'),
+                  label: Text(
+                    draft.stakeCents < minTicketStakeCents
+                        ? 'Serve almeno ${formatEuro(minTicketStakeCents)}'
+                        : (_busy ? 'Registro…' : 'Registra schedina ipotetica'),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(_noChaseNote, style: Theme.of(context).textTheme.bodySmall),
@@ -1449,6 +1514,14 @@ class _TicketDetail extends ConsumerWidget {
               Text('Registrata il ${formatItalianDate(ticket.createdAt)}'
                   '${ticket.targetDrawDate == null ? '' : ' per il concorso del ${formatItalianDate(ticket.targetDrawDate!)}'}.'),
               if (ticket.note != null) Text(ticket.note!, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                onPressed: () => context.push(
+                  newTicketRoute(numbers: ticket.numbers, wheel: ticket.wheelCode, stakes: ticket.stakes),
+                ),
+                icon: const Icon(Icons.replay),
+                label: const Text('Rigioca questa schedina'),
+              ),
             ],
           ),
         ),

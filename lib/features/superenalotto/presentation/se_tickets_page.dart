@@ -5,12 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/lotto/wheel_catalog.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../data/se_ticket_repository.dart';
 import '../data/superenalotto_sync.dart';
+import '../domain/se_prize_estimates.dart';
 import 'se_chrome.dart';
+import 'se_studio_page.dart';
 
-/// Catalogo delle sole schedine SuperEnalotto (categorie, non euro).
+/// Catalogo delle sole schedine SuperEnalotto (categoria + stima euro Sisal).
 class SeTicketsPage extends ConsumerStatefulWidget {
   const SeTicketsPage({super.key});
 
@@ -81,7 +84,8 @@ class _SeTicketsPageState extends ConsumerState<SeTicketsPage> {
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Text(
-                        'Solo SuperEnalotto. Le schedine del Lotto restano nella scheda Schedine, con le poste in euro.',
+                        'Solo SuperEnalotto. Ogni sestina costa 1,00 € di studio sul budget. '
+                        'Dopo il concorso vedi anche una stima in euro dalle quote medie Sisal.',
                         style: TextStyle(color: SeColors.ink),
                       ),
                     ),
@@ -225,6 +229,7 @@ class _SeTicketCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final match = ticket.match;
     final win = match?.isCategoryWin == true;
+    final money = match == null ? null : estimateSeWin(match);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -268,15 +273,39 @@ class _SeTicketCard extends StatelessWidget {
                   ),
                 ),
               ],
+              if (money != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  money.isJackpot
+                      ? 'Stima: Jackpot (montepremi variabile)'
+                      : 'Stima vincita: ${money.shortEuro}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: money.estimatedCents > 0 || money.isJackpot ? SeColors.forest : SeColors.ink,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(money.disclaimer, style: Theme.of(context).textTheme.bodySmall),
+              ],
               const SizedBox(height: 6),
               Text(
                 [
+                  'Posta studio ${formatEuro(seCombinationCostCents)}',
                   if (ticket.isAutoStudy) 'Auto',
                   if (match != null) '${match.hits} numeri nei sei',
                   if (match?.jollyMatched == true) 'Jolly',
                   ticket.origin,
                 ].where((part) => part.isNotEmpty).join(' · '),
                 style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(seStudioRoute(numbers: ticket.numbers)),
+                  icon: const Icon(Icons.replay, size: 18),
+                  label: const Text('Rigioca'),
+                ),
               ),
             ],
           ),

@@ -8,8 +8,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../../core/settings/app_settings.dart';
+import '../../../core/settings/settings_controller.dart';
 import '../../systems/domain/sisal_guarantee.dart';
+import '../../virtual_wallet/data/wallet_repository.dart';
+import '../data/se_ticket_repository.dart';
 import '../domain/se_bacheca.dart';
+import '../domain/se_register.dart';
 import 'se_chrome.dart';
 import 'se_studio_page.dart';
 
@@ -34,6 +38,7 @@ class _SeBachecaPageState extends ConsumerState<SeBachecaPage> {
   var _multiSize = 7;
   var _multiPacks = 5;
   var _busy = false;
+  var _registering = false;
   String? _message;
   SeBachecaResult? _result;
 
@@ -77,6 +82,39 @@ class _SeBachecaPageState extends ConsumerState<SeBachecaPage> {
         _ruotanti.add(n);
       }
     });
+  }
+
+  Future<void> _registerAll() async {
+    final columns = _result?.columns ?? const <List<int>>[];
+    if (columns.isEmpty) return;
+    final settings = ref.read(settingsControllerProvider).value;
+    if (settings == null) return;
+    setState(() {
+      _registering = true;
+      _message = null;
+    });
+    final outcome = await registerSeColumns(
+      columns: columns,
+      origin: 'Bacheca · ${_kind.label}',
+      note: _result?.coverageClaim,
+      settings: settings,
+      wallet: ref.read(walletRepositoryProvider),
+      seTickets: ref.read(seTicketRepositoryProvider),
+    );
+    if (!mounted) return;
+    setState(() => _registering = false);
+    if (!outcome.ok) {
+      setState(() => _message = outcome.error);
+      return;
+    }
+    ref.invalidate(seTicketsProvider);
+    ref.invalidate(walletSummaryProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Registrate ${outcome.saved} sestine nel catalogo SE (−${formatEuro(outcome.saved * 100)} di budget studio).'),
+        action: SnackBarAction(label: 'Catalogo', onPressed: () => context.push('/more/se/tickets')),
+      ),
+    );
   }
 
   Future<void> _develop() async {
@@ -209,10 +247,24 @@ class _SeBachecaPageState extends ConsumerState<SeBachecaPage> {
                     title: '${_kind.label} · ${columns.length} sestine',
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => context.push(seStudioRoute(numbers: columns.first)),
-                    icon: const Icon(Icons.receipt_long_outlined),
-                    label: const Text('Prima sestina in schedina'),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(backgroundColor: SeColors.forest),
+                        onPressed: _registering || _busy ? null : _registerAll,
+                        icon: _registering
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.save_alt),
+                        label: Text(_registering ? 'Registro…' : 'Registra tutte nel catalogo (−${formatEuro(_result!.costCents)})'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => context.push(seStudioRoute(numbers: columns.first)),
+                        icon: const Icon(Icons.receipt_long_outlined),
+                        label: const Text('Prima sestina in studio'),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -221,7 +273,8 @@ class _SeBachecaPageState extends ConsumerState<SeBachecaPage> {
           _Footer(
             combos: columns.length,
             totalCents: _result?.costCents ?? 0,
-            enabled: columns.isNotEmpty,
+            enabled: columns.isNotEmpty && !_registering,
+            onAvanti: _registerAll,
           ),
         ],
       ),
@@ -550,11 +603,12 @@ class _SisalRows extends StatelessWidget {
 }
 
 class _Footer extends StatelessWidget {
-  const _Footer({required this.combos, required this.totalCents, required this.enabled});
+  const _Footer({required this.combos, required this.totalCents, required this.enabled, this.onAvanti});
 
   final int combos;
   final int totalCents;
   final bool enabled;
+  final VoidCallback? onAvanti;
 
   @override
   Widget build(BuildContext context) {
@@ -582,12 +636,8 @@ class _Footer extends StatelessWidget {
                   backgroundColor: enabled ? SeColors.forest : SeColors.forest.withValues(alpha: 0.35),
                   minimumSize: const Size(140, 48),
                 ),
-                onPressed: enabled
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Studio: $combos sestine · ${formatEuro(totalCents)}. Nessun pagamento.')),
-                        )
-                    : null,
-                child: const Text('Avanti', style: TextStyle(fontWeight: FontWeight.w800)),
+                onPressed: enabled ? onAvanti : null,
+                child: const Text('Registra', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
             ],
           ),

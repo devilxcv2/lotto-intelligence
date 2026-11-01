@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.19 — 2026-11-01
+
+Rigioca, budget SE e Soldi.
+
+- **Rigioca** su schedine Lotto (numeri + poste) e SuperEnalotto (numeri in studio).
+- Maschera / bacheca / studio SE: registrare le sestine G3/G4/G5 (e le altre) nel catalogo scala il budget (1 € a sestina).
+- Catalogo SE: stima in euro dalle quote medie Sisal dopo il concorso; guida «quanto avrei vinto» in Soldi.
+- Scheda Soldi: sezioni Lotto / SE separate, credito che include SE, azioni rapide.
+- Nuova schedina Lotto: non si registra sotto 1,00 €.
+
 ## 0.5.18 — 2026-10-28
 
 Bacheca sistemi SuperEnalotto.
