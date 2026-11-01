@@ -152,9 +152,9 @@ class BudgetBoardPage extends ConsumerWidget {
                           label: const Text('Nuova SE'),
                         ),
                         OutlinedButton.icon(
-                          onPressed: () => context.go('/tickets'),
+                          onPressed: () => context.push('/tickets/history'),
                           icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Schedine'),
+                          label: const Text('Storico'),
                         ),
                         OutlinedButton.icon(
                           onPressed: () => context.push('/more/se/tickets'),

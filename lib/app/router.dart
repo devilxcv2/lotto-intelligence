@@ -11,6 +11,7 @@ import '../features/draws/presentation/draws_pages.dart';
 import '../features/settings/presentation/more_pages.dart';
 import '../features/settings/presentation/share_app_page.dart';
 import '../features/superenalotto/presentation/se_bacheca_page.dart';
+import '../features/superenalotto/presentation/se_hit_stats_page.dart';
 import '../features/superenalotto/presentation/se_hub_page.dart';
 import '../features/superenalotto/presentation/se_studio_page.dart';
 import '../features/superenalotto/presentation/se_tickets_page.dart';
@@ -20,6 +21,10 @@ import '../features/systems/presentation/sisal_board_page.dart';
 import '../features/systems/presentation/system_pages.dart';
 import '../features/systems/presentation/zoppe_page.dart';
 import '../features/virtual_wallet/presentation/budget_board_page.dart';
+import '../features/virtual_wallet/presentation/lotto_hit_stats_page.dart';
+import '../features/virtual_wallet/presentation/quick_play_page.dart';
+import '../features/virtual_wallet/presentation/ticket_history_page.dart';
+import '../features/virtual_wallet/presentation/ticket_hub_page.dart';
 import '../features/virtual_wallet/presentation/wallet_pages.dart';
 import 'app_shell.dart';
 
@@ -61,8 +66,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/tickets',
-              builder: (context, state) => const TicketsPage(),
+              builder: (context, state) => const TicketHubPage(),
               routes: [
+                GoRoute(path: 'quick', builder: (context, state) => const QuickPlayPage()),
+                GoRoute(path: 'history', builder: (context, state) => const TicketHistoryPage()),
+                GoRoute(path: 'lotto', builder: (context, state) => const TicketsPage()),
+                GoRoute(path: 'stats/lotto', builder: (context, state) => const LottoHitStatsPage()),
+                GoRoute(path: 'stats/se', builder: (context, state) => const SeHitStatsPage()),
                 GoRoute(
                   path: 'new',
                   builder: (context, state) => NewTicketPage(

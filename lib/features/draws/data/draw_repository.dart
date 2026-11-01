@@ -172,6 +172,45 @@ class DrawRepository {
     return [for (final code in ordered) grouped[code]!];
   }
 
+  /// Ultime [drawDays] date di estrazione: dove sono usciti i [numbers] e su quale ruota.
+  Future<Map<int, List<({DateTime date, String wheelCode})>>> recentNumberAppearances({
+    required Iterable<int> numbers,
+    int drawDays = 12,
+  }) async {
+    final wanted = numbers.where((n) => n >= 1 && n <= 90).toSet();
+    if (wanted.isEmpty || drawDays <= 0) return {};
+    final dateRows = await _db.customSelect(
+      'SELECT DISTINCT draw_date AS d FROM draws ORDER BY draw_date DESC LIMIT ?',
+      variables: [Variable.withInt(drawDays)],
+      readsFrom: {_db.draws},
+    ).get();
+    if (dateRows.isEmpty) return {};
+    final dates = [for (final row in dateRows) row.read<DateTime>('d')];
+    final placeholders = List.filled(wanted.length, '?').join(',');
+    final datePlaceholders = List.filled(dates.length, '?').join(',');
+    final rows = await _db.customSelect(
+      'SELECT n.number AS number, w.code AS code, d.draw_date AS d '
+      'FROM draw_numbers n '
+      'JOIN draws d ON d.id = n.draw_id '
+      'JOIN wheels w ON w.id = d.wheel_id '
+      'WHERE n.number IN ($placeholders) AND d.draw_date IN ($datePlaceholders) '
+      'ORDER BY d.draw_date DESC, w.sort_order',
+      variables: [
+        for (final n in wanted) Variable.withInt(n),
+        for (final d in dates) Variable.withDateTime(d),
+      ],
+      readsFrom: {_db.draws, _db.wheels, _db.drawNumbers},
+    ).get();
+    final out = <int, List<({DateTime date, String wheelCode})>>{
+      for (final n in wanted) n: <({DateTime date, String wheelCode})>[],
+    };
+    for (final row in rows) {
+      final number = row.read<int>('number');
+      out[number]!.add((date: row.read<DateTime>('d').toUtc(), wheelCode: row.read<String>('code')));
+    }
+    return out;
+  }
+
   Future<List<DateTime>> datesInMonth(int year, int month) async {
     final start = DateTime.utc(year, month);
     final end = DateTime.utc(year, month + 1);

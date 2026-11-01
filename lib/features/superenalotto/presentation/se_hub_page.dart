@@ -176,6 +176,13 @@ class SeHubPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       SeActionCard(
+                        icon: Icons.emoji_events_outlined,
+                        title: 'Numeri che hanno preso',
+                        subtitle: 'Categorie tue × ultime uscite SE',
+                        onTap: () => context.push('/tickets/stats/se'),
+                      ),
+                      const SizedBox(height: 10),
+                      SeActionCard(
                         icon: Icons.table_chart_outlined,
                         title: 'Estrazioni e archivio',
                         subtitle: 'Ultime combinazioni e scarico dal sito ufficiale',

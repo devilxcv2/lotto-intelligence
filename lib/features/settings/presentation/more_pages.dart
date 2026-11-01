@@ -74,6 +74,12 @@ class MoreHubPage extends StatelessWidget {
                       onTap: () => context.push('/more/settings'),
                     ),
                     HubTile(
+                      icon: Icons.flash_on_rounded,
+                      title: 'Ticket (crea e storico)',
+                      subtitle: 'Schedine rapide, storico, numeri che hanno pagato',
+                      onTap: () => context.go('/tickets'),
+                    ),
+                    HubTile(
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Soldi e budget',
                       subtitle: 'Credito, vincite, perché Zoppe non ha centrato',

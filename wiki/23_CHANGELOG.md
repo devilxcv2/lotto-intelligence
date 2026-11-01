@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.20 — 2026-11-01
+
+Menu Ticket: crea, storico e numeri che hanno pagato.
+
+- Scheda **Ticket**: hub con creazione rapida Lotto/SE, storico unificato, stats numeri.
+- **Numeri Lotto**: centri delle schedine in utile × ultime uscite per ruota.
+- **Numeri SuperEnalotto**: numeri delle categorie × ultime uscite SE (menu a parte).
+- GUI **Crea schedina** con griglia e scorciatoie; storico con filtri e Rigioca.
+
 ## 0.5.19 — 2026-11-01
 
 Rigioca, budget SE e Soldi.
